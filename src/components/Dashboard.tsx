@@ -6,7 +6,7 @@ import { UserProfile, AlbumProgress } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, PRIZES_COUNT, COCA_COLA_COUNT } from '../constants';
 import { motion } from 'motion/react';
 import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { WorldCupBall } from './ui/WorldCupBall';
 
 export default function Dashboard({ userProfile }: { userProfile: UserProfile | null }) {
   const navigate = useNavigate();
@@ -103,11 +103,27 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight">¡Hola, {userProfile?.displayName}!</h2>
-          <p className="text-zinc-400 mt-1">Aquí tienes un resumen de tu colección mundialista.</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden p-8 rounded-[2.5rem] bg-zinc-900 border border-zinc-800 shadow-2xl">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-worldcup-green/5 blur-[100px] -mr-32 -mt-32 rounded-full" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-worldcup-red/5 blur-[100px] -ml-32 -mb-32 rounded-full" />
+        
+        <div className="relative z-10">
+          <WorldCupBall className="w-16 h-16 mb-4 shadow-2xl" animate />
+          <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">
+            ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-red via-worldcup-green to-worldcup-blue animate-gradient-x">{userProfile?.displayName}</span>!
+          </h2>
+          <p className="text-zinc-400 mt-2 font-medium">Tu camino a la gloria eterna ha comenzado.</p>
+        </div>
+
+        <div className="relative z-10 flex items-center gap-3 bg-black/40 backdrop-blur-md p-1.5 rounded-2xl border border-zinc-800">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-worldcup-red to-worldcup-blue flex items-center justify-center font-black text-white italic">
+            #{ownedCount}
+          </div>
+          <div className="pr-4">
+            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold leading-none">Puntos</p>
+            <p className="text-lg font-black text-white leading-none mt-0.5">{ownedCount * 10}</p>
+          </div>
         </div>
       </header>
 
@@ -117,66 +133,111 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           return (
             <motion.div 
               key={stat.name}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
               onClick={() => stat.action?.()}
               className={cn(
-                "bg-zinc-900 border border-zinc-800 p-6 rounded-[2rem] hover:border-zinc-700 transition-all",
-                stat.action && "cursor-pointer hover:bg-zinc-800/50 active:scale-95"
+                "group relative bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem] transition-all duration-300",
+                "hover:border-zinc-700 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1",
+                stat.action && "cursor-pointer active:scale-95"
               )}
             >
-              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-4 shadow-sm", stat.bg)}>
-                <Icon className={cn("w-6 h-6", stat.color)} />
+              <div className="absolute inset-0 bg-gradient-to-br from-white/2 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem]" />
+              
+              <div className={cn("w-14 h-14 rounded-[1.25rem] flex items-center justify-center mb-6 shadow-2xl relative z-10", stat.bg)}>
+                <Icon className={cn("w-7 h-7 group-hover:scale-110 transition-transform", stat.color)} />
               </div>
-              <p className="text-zinc-400 text-sm font-medium">{stat.name}</p>
-              <p className="text-3xl font-black text-white mt-1">{stat.value}</p>
+              
+              <div className="relative z-10">
+                <p className="text-zinc-500 text-xs font-black uppercase tracking-widest mb-1">{stat.name}</p>
+                <div className="flex items-baseline gap-1">
+                  <p className="text-3xl font-black text-white italic">{stat.value}</p>
+                  {stat.name === 'Repetidas' && <span className="text-[10px] text-amber-500 font-bold uppercase tracking-tighter">Gold</span>}
+                </div>
+              </div>
             </motion.div>
           );
         })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Progress Bar and Details */}
-        <section className="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 blur-3xl rounded-full" />
-          <h3 className="text-xl font-bold text-white mb-6">Estado General</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-end">
-              <span className="text-sm text-zinc-400 font-medium">Progreso del Álbum</span>
-              <span className="text-2xl font-black text-green-500">{completionRate}%</span>
+        <section className="bg-zinc-900 border border-zinc-800 p-10 rounded-[3rem] relative overflow-hidden group shadow-2xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-worldcup-green/5 blur-[120px] -mr-32 -mt-32 rounded-full transition-all group-hover:bg-worldcup-green/10" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-2 h-8 bg-worldcup-green rounded-full" />
+              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Estado de Colección</h3>
             </div>
-            <div className="h-4 w-full bg-zinc-800 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${completionRate}%` }}
-                transition={{ duration: 1, ease: 'easeOut' }}
-                className="h-full bg-gradient-to-r from-green-600 to-green-400 shadow-[0_0_10px_rgba(22,163,74,0.4)]"
-              />
+            
+            <div className="space-y-6">
+              <div className="flex justify-between items-end">
+                <div className="space-y-1">
+                  <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] block">Progreso Local</span>
+                  <span className="text-5xl font-black text-white italic tracking-tighter leading-none">{completionRate}%</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] block">Faltantes</span>
+                  <span className="text-2xl font-black text-zinc-300 italic tracking-tighter leading-none">{missingCount}</span>
+                </div>
+              </div>
+              
+              <div className="h-4 w-full bg-zinc-800/50 rounded-full overflow-hidden p-1 border border-zinc-800">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${completionRate}%` }}
+                  transition={{ duration: 1.5, ease: 'circOut' }}
+                  className="h-full bg-gradient-to-r from-worldcup-red via-worldcup-green to-worldcup-blue rounded-full relative"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  <div className="absolute top-0 right-0 bottom-0 w-2 bg-white/40 blur-[2px]" />
+                </motion.div>
+              </div>
+              
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-black/20 border border-zinc-800/50 backdrop-blur-sm">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-zinc-800">
+                  <TrendingUp className="w-5 h-5 text-worldcup-green" />
+                </div>
+                <p className="text-sm text-zinc-400 font-medium leading-relaxed">
+                  Estás a <span className="text-white font-bold">{missingCount}</span> estampas de completar la historia. Cada intercambio te acerca más.
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-zinc-500 pt-2">
-              Te faltan <span className="text-white font-bold">{missingCount}</span> estampas para completar la gloria eterna.
-            </p>
           </div>
         </section>
 
-        {/* Recent Activity or Quick Tips */}
-        <section className="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem]">
-          <h3 className="text-xl font-bold text-white mb-6">Próximos Pasos</h3>
-          <ul className="space-y-4">
-            {[
-              { text: 'Busca intercambios en el Market', icon: Repeat },
-              { text: 'Marca tus nuevas estampas', icon: CheckCircle2 },
-              { text: 'Habla con otros coleccionistas', icon: MessageCircle },
-            ].map((item, i) => (
-              <li key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-black/40 border border-zinc-800/50 hover:bg-zinc-800/50 transition-colors">
-                <div className="w-10 h-10 bg-zinc-800 rounded-xl flex items-center justify-center">
-                  <item.icon className="w-5 h-5 text-zinc-400" />
-                </div>
-                <span className="text-sm font-medium text-zinc-300">{item.text}</span>
-              </li>
-            ))}
-          </ul>
+        <section className="bg-zinc-900 border border-zinc-800 p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-worldcup-blue/5 blur-[120px] -ml-32 -mb-32 rounded-full" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-2 h-8 bg-worldcup-blue rounded-full" />
+              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Siguientes Objetivos</h3>
+            </div>
+            
+            <ul className="space-y-3">
+              {[
+                { text: 'Explorar Market de Intercambios', icon: Repeat, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+                { text: 'Sincronizar nuevas estampas', icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10' },
+                { text: 'Iniciar chat con coleccionistas', icon: MessageCircle, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+              ].map((item, i) => (
+                <li 
+                  key={i} 
+                  className="group flex items-center gap-4 p-4 rounded-2xl bg-black/40 border border-zinc-800/50 hover:bg-zinc-800/80 hover:border-zinc-700 transition-all cursor-pointer"
+                >
+                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110", item.bg)}>
+                    <item.icon className={cn("w-6 h-6", item.color)} />
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-sm font-bold text-zinc-200 block group-hover:text-white transition-colors">{item.text}</span>
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Acción Recomendada</span>
+                  </div>
+                  <ArrowRightLeft className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
       </div>
     </div>

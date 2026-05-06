@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, getDocs, setDoc, where, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, getDocs, setDoc, where, getDoc, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress, StickerStatus } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, PRIZES_COUNT, COCA_COLA_COUNT, FLAGS } from '../constants';
@@ -65,6 +65,15 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
       );
     }
   }, [userProfile]);
+
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId]
+    }));
+  };
 
   const groups: StickerGroup[] = useMemo(() => {
     const list: StickerGroup[] = TEAMS.map(team => ({
@@ -136,6 +145,8 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
           
           const isCompleted = ownedInGroup === group.count;
 
+          const isExpanded = expandedGroups[group.id] || search.length > 0;
+
           return (
             <motion.div 
               key={group.id}
@@ -144,10 +155,15 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
               transition={{ delay: idx * 0.02 }}
               className={cn(
                 "bg-zinc-900/50 border border-zinc-800 rounded-3xl overflow-hidden group transition-all duration-300",
-                isCompleted ? "border-green-500/30 bg-green-950/5" : "hover:border-zinc-700"
+                isCompleted ? "border-green-500/30 bg-green-950/5" : "hover:border-zinc-700",
+                isExpanded && "ring-1 ring-zinc-700 shadow-xl"
               )}
             >
-              <div className="p-5 flex items-center justify-between border-b border-zinc-800/50">
+              <button 
+                onClick={() => toggleGroup(group.id)}
+                className="w-full p-5 flex items-center justify-between border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors"
+                aria-expanded={isExpanded}
+              >
                 <div className="flex items-center gap-4">
                   {group.type === 'team' ? (
                     <img src={group.flag} alt={group.name} className="w-8 h-6 object-cover rounded-sm shadow-sm" />
@@ -156,55 +172,74 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                        {group.id === 'PREMIOS' ? <Trophy className="w-4 h-4 text-green-500" /> : <Star className="w-4 h-4 text-green-500" />}
                     </div>
                   )}
-                  <div>
+                  <div className="text-left">
                     <h4 className="text-white font-bold">{group.name}</h4>
                     <p className="text-[10px] text-zinc-500 uppercase tracking-tighter font-bold">
                       {ownedInGroup}/{group.count} ESTAMPAS
                     </p>
                   </div>
                 </div>
-                {isCompleted && (
-                  <div className="bg-green-600/20 text-green-500 p-1.5 rounded-full">
-                    <Check className="w-4 h-4" />
-                  </div>
-                )}
-              </div>
-              
-              <div className="p-4 grid grid-cols-5 gap-2">
-                {Array.from({ length: group.count }).map((_, i) => {
-                  const stickerId = `${group.id}-${i + 1}`;
-                  const status = progress?.stickers[stickerId] || 0;
-                  return (
-                    <div key={stickerId} className="relative group">
-                      <button
-                        onClick={() => toggleSticker(stickerId)}
-                        className={cn(
-                          "w-full aspect-square rounded-lg text-[10px] font-black flex items-center justify-center transition-all relative border",
-                          status === 0 && "bg-zinc-900 border-zinc-800 text-zinc-700 hover:border-zinc-600",
-                          status === 1 && "bg-green-600 border-green-500 text-white shadow-[0_0_10px_rgba(22,163,74,0.3)]",
-                          status === 2 && "bg-amber-500 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.3)]"
-                        )}
-                      >
-                        {i + 1}
-                        {status === 2 && (
-                          <div className="absolute -top-1 -right-1 bg-black text-amber-500 rounded-full p-0.5 border border-amber-500/50 scale-75">
-                             <Repeat className="w-2.5 h-2.5" />
-                          </div>
-                        )}
-                      </button>
-                      {status === 0 && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); findWhoHasIt(stickerId); }}
-                          className="absolute -top-1 -right-1 bg-zinc-800 text-zinc-400 rounded-full p-1 border border-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity hover:text-green-500"
-                          title="¿Quién la tiene?"
-                        >
-                          <Search className="w-2.5 h-2.5" />
-                        </button>
-                      )}
+                <div className="flex items-center gap-3">
+                  {isCompleted && (
+                    <div className="bg-green-600/20 text-green-500 p-1.5 rounded-full">
+                      <Check className="w-4 h-4" />
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                  <div className={cn(
+                    "p-1.5 rounded-xl bg-zinc-800 text-zinc-500 transition-transform duration-300",
+                    isExpanded && "rotate-180 bg-zinc-700 text-white"
+                  )}>
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                </div>
+              </button>
+              
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                  >
+                    <div className="p-4 grid grid-cols-5 gap-2 border-t border-zinc-800/30">
+                      {Array.from({ length: group.count }).map((_, i) => {
+                        const stickerId = `${group.id}-${i + 1}`;
+                        const status = progress?.stickers[stickerId] || 0;
+                        return (
+                          <div key={stickerId} className="relative group/sticker">
+                            <button
+                              onClick={() => toggleSticker(stickerId)}
+                              className={cn(
+                                "w-full aspect-square rounded-lg text-[10px] font-black flex items-center justify-center transition-all relative border",
+                                status === 0 && "bg-zinc-900 border-zinc-800 text-zinc-700 hover:border-zinc-600",
+                                status === 1 && "bg-green-600 border-green-500 text-white shadow-[0_0_10px_rgba(22,163,74,0.3)]",
+                                status === 2 && "bg-amber-500 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                              )}
+                            >
+                              {i + 1}
+                              {status === 2 && (
+                                <div className="absolute -top-1 -right-1 bg-black text-amber-500 rounded-full p-0.5 border border-amber-500/50 scale-75">
+                                   <Repeat className="w-2.5 h-2.5" />
+                                </div>
+                              )}
+                            </button>
+                            {status === 0 && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); findWhoHasIt(stickerId); }}
+                                className="absolute -top-1 -right-1 bg-zinc-800 text-zinc-400 rounded-full p-1 border border-zinc-700 opacity-0 group-hover/sticker:opacity-100 transition-opacity hover:text-green-500"
+                                title="¿Quién la tiene?"
+                              >
+                                <Search className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           );
         })}

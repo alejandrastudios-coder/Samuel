@@ -4,7 +4,7 @@ import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, s
 import { doc, getDoc, setDoc, serverTimestamp, query, collection, where, getDocs, updateDoc } from 'firebase/firestore';
 import { motion } from 'motion/react';
 import { Trophy, Lock, User as UserIcon, UserPlus, LogIn } from 'lucide-react';
-import { UserProfile } from '../types';
+import { WorldCupBall } from './ui/WorldCupBall';
 
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
@@ -110,27 +110,45 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-zinc-950 overflow-hidden relative p-4">
-      <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
-         <div className="absolute top-[10%] left-[10%] w-[40vw] h-[40vw] bg-green-900/40 rounded-full blur-[120px]" />
-         <div className="absolute bottom-[10%] right-[10%] w-[30vw] h-[30vw] bg-amber-900/20 rounded-full blur-[100px]" />
+    <div className="h-screen w-full flex items-center justify-center bg-zinc-950 overflow-hidden relative p-4 font-sans bg-fluid-waves">
+      <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none overflow-hidden">
+         <div className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-worldcup-red/20 rounded-full blur-[140px] animate-pulse" />
+         <div className="absolute -bottom-[10%] -right-[10%] w-[50vw] h-[50vw] bg-worldcup-green/20 rounded-full blur-[120px] animate-pulse transition-all duration-[5000ms]" />
+         <div className="absolute top-[30%] left-[60%] w-[30vw] h-[30vw] bg-worldcup-blue/10 rounded-full blur-[100px]" />
+         
+         <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
+           <motion.path 
+             initial={{ pathLength: 0, opacity: 0 }}
+             animate={{ pathLength: 1, opacity: 1 }}
+             transition={{ duration: 2, ease: "easeInOut" }}
+             d="M0 20 Q 25 40 50 20 T 100 20" 
+             fill="none" 
+             stroke="white" 
+             strokeWidth="0.1" 
+           />
+           <path d="M0 50 Q 25 70 50 50 T 100 50" fill="none" stroke="white" strokeWidth="0.05" />
+           <path d="M0 80 Q 25 100 50 80 T 100 80" fill="none" stroke="white" strokeWidth="0.1" />
+         </svg>
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         className="max-w-md w-full z-10"
       >
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-[1.5rem] shadow-[0_0_30px_rgba(22,163,74,0.3)] mb-4">
-            <Trophy className="w-8 h-8 text-white" />
+        <div className="text-center mb-10">
+          <div className="relative inline-flex items-center justify-center w-28 h-28 mb-8 group">
+            <div className="absolute inset-0 bg-gradient-to-tr from-worldcup-red via-worldcup-green to-worldcup-blue rounded-full animate-spin-slow opacity-30 group-hover:opacity-50 transition-opacity blur-xl" />
+            <WorldCupBall className="w-20 h-20 shadow-2xl relative z-10" animate />
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight mb-1">MI ÁLBUM <span className="text-green-500">2026</span></h1>
-          <p className="text-zinc-400 text-sm font-medium">Panel de Coleccionistas</p>
+          <h1 className="text-4xl font-black text-white tracking-tight leading-none mb-2">MI ÁLBUM <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-green to-worldcup-blue">2026</span></h1>
+          <p className="text-zinc-400 text-sm font-bold uppercase tracking-[0.2em] opacity-60">United for the Game</p>
         </div>
 
-        <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-6 md:p-8 rounded-[2rem] shadow-2xl">
-          <form onSubmit={handleAuth} className="space-y-4">
+        <div className="glass-panel p-8 md:p-10 rounded-[2.5rem] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-worldcup-green/10 blur-2xl -mr-16 -mt-16" />
+          
+          <form onSubmit={handleAuth} className="space-y-5 relative z-10">
             {isRegister && (
                <div className="space-y-1">
                 <label className="text-xs font-bold text-zinc-500 uppercase ml-2">Nombre Público</label>
@@ -193,7 +211,7 @@ export default function Login() {
             <button 
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-500 transition-all active:scale-[0.98] disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
+              className="w-full py-4 bg-gradient-to-r from-worldcup-green to-worldcup-blue text-white font-bold rounded-2xl hover:brightness-110 shadow-lg shadow-worldcup-green/20 transition-all active:scale-[0.98] disabled:opacity-50 mt-6 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
