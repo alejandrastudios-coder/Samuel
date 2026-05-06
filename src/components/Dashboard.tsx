@@ -12,18 +12,22 @@ import { WorldCupBall } from './ui/WorldCupBall';
 export default function Dashboard({ userProfile }: { userProfile: UserProfile | null }) {
   const navigate = useNavigate();
   const [progress, setProgress] = useState<AlbumProgress | null>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    const checkInstallable = () => {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-      const isStandalone = (window.navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches;
-      if (isIOS && !isStandalone) setIsInstallable(true);
+    const checkStandalone = () => {
+      const standalone = (window.navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches;
+      setIsStandalone(!!standalone);
     };
-    checkInstallable();
+    checkStandalone();
+    
+    // Standard handler for Chrome/Android
     const handler = (e: any) => {
       e.preventDefault();
-      setIsInstallable(true);
+      // We don't hide the UI, we just keep the event for later
+      window.addEventListener('beforeinstallprompt', (ev) => {
+        (window as any).deferredPrompt = ev;
+      });
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
@@ -132,13 +136,13 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         <div className="relative z-10 w-full md:w-auto">
           <div className="flex justify-between items-start">
             <WorldCupBall className="w-16 h-16 mb-4 shadow-2xl" animate />
-            {isInstallable && (
+            {!isStandalone && (
               <button 
                 onClick={triggerInstall}
-                className="md:hidden flex items-center gap-2 px-4 py-2 bg-green-500 text-black rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg"
+                className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:scale-105 transition-transform"
               >
                 <Download className="w-4 h-4" />
-                Descargar
+                Instalar App
               </button>
             )}
           </div>
@@ -160,25 +164,25 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       </header>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {isInstallable && (
+        {!isStandalone && (
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="col-span-2 lg:col-span-4 bg-gradient-to-br from-green-500/20 to-emerald-500/5 border border-green-500/30 p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group shadow-2xl"
+            className="col-span-2 lg:col-span-4 bg-gradient-to-br from-green-500 to-emerald-600 p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group shadow-2xl shadow-green-500/20"
           >
-            <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-green-500/10 blur-3xl rounded-full" />
+            <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-white/20 blur-3xl rounded-full" />
             <div className="flex items-center gap-6 relative z-10">
-              <div className="w-16 h-16 rounded-3xl bg-green-500 text-black flex items-center justify-center flex-shrink-0 shadow-xl group-hover:rotate-12 transition-transform">
+              <div className="w-16 h-16 rounded-3xl bg-white text-green-600 flex items-center justify-center flex-shrink-0 shadow-xl group-hover:rotate-12 transition-transform">
                 <Download className="w-8 h-8" />
               </div>
-              <div>
-                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Descarga la App</h3>
-                <p className="text-zinc-400 font-medium">Accede más rápido y recibe notificaciones de chats en tiempo real.</p>
+              <div className="text-left">
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Descargar en el Teléfono</h3>
+                <p className="text-white/80 font-medium">Instala la app para recibir notificaciones y entrar directo.</p>
               </div>
             </div>
             <button 
               onClick={triggerInstall}
-              className="w-full md:w-auto px-10 py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl relative z-10"
+              className="w-full md:w-auto px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl relative z-10"
             >
               Instalar Ahora
             </button>
