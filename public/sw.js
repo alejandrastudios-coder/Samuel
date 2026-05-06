@@ -14,7 +14,7 @@ self.addEventListener('fetch', (event) => {
 // Listener for push notifications
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Mundial 2026';
+  const title = data.title || 'Stickers 2026';
   const options = {
     body: data.body || '¡Tienes una nueva actualización!',
     icon: 'https://cdn-icons-png.flaticon.com/512/1165/1165187.png',
