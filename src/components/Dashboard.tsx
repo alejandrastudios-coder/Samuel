@@ -5,13 +5,33 @@ import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, PRIZES_COUNT, COCA_COLA_COUNT } from '../constants';
 import { motion } from 'motion/react';
-import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft } from 'lucide-react';
+import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 
 export default function Dashboard({ userProfile }: { userProfile: UserProfile | null }) {
   const navigate = useNavigate();
   const [progress, setProgress] = useState<AlbumProgress | null>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const checkInstallable = () => {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      const isStandalone = (window.navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches;
+      if (isIOS && !isStandalone) setIsInstallable(true);
+    };
+    checkInstallable();
+    const handler = (e: any) => {
+      e.preventDefault();
+      setIsInstallable(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const triggerInstall = () => {
+    window.dispatchEvent(new CustomEvent('trigger-install-prompt'));
+  };
 
   useEffect(() => {
     if (userProfile) {
@@ -109,15 +129,26 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         <div className="absolute top-0 right-0 w-64 h-64 bg-worldcup-green/5 blur-[100px] -mr-32 -mt-32 rounded-full" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-worldcup-red/5 blur-[100px] -ml-32 -mb-32 rounded-full" />
         
-        <div className="relative z-10">
-          <WorldCupBall className="w-16 h-16 mb-4 shadow-2xl" animate />
+        <div className="relative z-10 w-full md:w-auto">
+          <div className="flex justify-between items-start">
+            <WorldCupBall className="w-16 h-16 mb-4 shadow-2xl" animate />
+            {isInstallable && (
+              <button 
+                onClick={triggerInstall}
+                className="md:hidden flex items-center gap-2 px-4 py-2 bg-green-500 text-black rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg"
+              >
+                <Download className="w-4 h-4" />
+                Descargar
+              </button>
+            )}
+          </div>
           <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">
             ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-red via-worldcup-green to-worldcup-blue animate-gradient-x">{userProfile?.displayName}</span>!
           </h2>
           <p className="text-zinc-400 mt-2 font-medium">Tu camino a la gloria eterna ha comenzado.</p>
         </div>
 
-        <div className="relative z-10 flex items-center gap-3 bg-black/40 backdrop-blur-md p-1.5 rounded-2xl border border-zinc-800">
+        <div className="relative z-10 hidden sm:flex items-center gap-3 bg-black/40 backdrop-blur-md p-1.5 rounded-2xl border border-zinc-800">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-worldcup-red to-worldcup-blue flex items-center justify-center font-black text-white italic">
             #{ownedCount}
           </div>
@@ -129,6 +160,30 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       </header>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {isInstallable && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="col-span-2 lg:col-span-4 bg-gradient-to-br from-green-500/20 to-emerald-500/5 border border-green-500/30 p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group shadow-2xl"
+          >
+            <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-green-500/10 blur-3xl rounded-full" />
+            <div className="flex items-center gap-6 relative z-10">
+              <div className="w-16 h-16 rounded-3xl bg-green-500 text-black flex items-center justify-center flex-shrink-0 shadow-xl group-hover:rotate-12 transition-transform">
+                <Download className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Descarga la App</h3>
+                <p className="text-zinc-400 font-medium">Accede más rápido y recibe notificaciones de chats en tiempo real.</p>
+              </div>
+            </div>
+            <button 
+              onClick={triggerInstall}
+              className="w-full md:w-auto px-10 py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl relative z-10"
+            >
+              Instalar Ahora
+            </button>
+          </motion.div>
+        )}
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (

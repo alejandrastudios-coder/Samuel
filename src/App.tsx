@@ -28,12 +28,14 @@ import {
   User as UserIcon,
   UserPlus,
   ArrowLeft,
-  Clock
+  Clock,
+  Download
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { UserProfile, AlbumProgress } from './types';
 
 import { WorldCupBall } from './components/ui/WorldCupBall';
+import { InstallPrompt } from './components/ui/InstallPrompt';
 
 // Components
 import Dashboard from './components/Dashboard';
@@ -45,6 +47,27 @@ import Login from './components/Login';
 
 function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, onSignOut: () => void }) {
   const location = useLocation();
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const checkInstallable = () => {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      const isStandalone = (window.navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches;
+      if (isIOS && !isStandalone) setIsInstallable(true);
+    };
+    checkInstallable();
+    const handler = (e: any) => {
+      e.preventDefault();
+      setIsInstallable(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const triggerInstall = () => {
+    window.dispatchEvent(new CustomEvent('trigger-install-prompt'));
+  };
+
   const menuItems = [
     { name: 'Inicio', icon: LayoutDashboard, path: '/' },
     { name: 'Álbum', icon: BookText, path: '/album' },
@@ -89,6 +112,15 @@ function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, o
         </div>
 
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+          {isInstallable && (
+            <button 
+              onClick={triggerInstall}
+              className="hidden sm:flex items-center gap-2 px-3 py-2 bg-green-600/10 text-green-500 rounded-xl font-bold hover:bg-green-600/20 transition-all border border-green-500/20"
+            >
+              <Download className="w-4 h-4" />
+              <span className="text-[10px] uppercase tracking-wider">Instalar</span>
+            </button>
+          )}
           <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-1.5 md:px-3 md:py-2">
             <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-zinc-700/50">
               {userProfile?.photoURL ? (
@@ -179,6 +211,14 @@ export default function App() {
   const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
+    if (user && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+  }, [user]);
+
+  useEffect(() => {
     if (user) {
       setProfileLoading(true);
       const unsub = onSnapshot(doc(db, 'users', user.uid), (doc) => {
@@ -224,6 +264,7 @@ export default function App() {
                       )}
                       <Route path="*" element={<Navigate to="/" />} />
                    </Routes>
+                   <InstallPrompt />
                 </div>
               </main>
             </AuthGuard>
