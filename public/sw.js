@@ -17,8 +17,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Mundial 2026';
   const options = {
     body: data.body || '¡Tienes una nueva actualización!',
-    icon: 'https://cdn-icons-png.flaticon.com/512/5323/5323982.png',
-    badge: 'https://cdn-icons-png.flaticon.com/512/5323/5323982.png',
+    icon: 'https://cdn-icons-png.flaticon.com/512/1165/1165187.png',
+    badge: 'https://cdn-icons-png.flaticon.com/512/1165/1165187.png',
     data: data.url || '/'
   };
 
