@@ -1,0 +1,218 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from './lib/firebase';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  LayoutDashboard, 
+  BookText, 
+  Repeat, 
+  MessageCircle, 
+  ShieldCheck, 
+  LogOut, 
+  Menu, 
+  X, 
+  Trophy,
+  Users,
+  Settings,
+  Bell,
+  Search,
+  CheckCircle2,
+  Lock,
+  User as UserIcon,
+  UserPlus,
+  ArrowLeft,
+  Clock
+} from 'lucide-react';
+import { cn } from './lib/utils';
+import { UserProfile, AlbumProgress } from './types';
+
+// Components
+import Dashboard from './components/Dashboard';
+import Album from './components/Album';
+import Marketplace from './components/Marketplace';
+import Chat from './components/Chat';
+import AdminPanel from './components/AdminPanel';
+import Login from './components/Login';
+
+function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, onSignOut: () => void }) {
+  const location = useLocation();
+  const menuItems = [
+    { name: 'Inicio', icon: LayoutDashboard, path: '/' },
+    { name: 'Álbum', icon: BookText, path: '/album' },
+    { name: 'Mercado', icon: Repeat, path: '/market' },
+    { name: 'Chat', icon: MessageCircle, path: '/chat' },
+  ];
+
+  if (userProfile?.role === 'admin') {
+    menuItems.push({ name: 'Admin', icon: ShieldCheck, path: '/admin' });
+  }
+
+  return (
+    <header className="fixed top-0 left-0 right-0 h-16 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800 z-50 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto h-full flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4 md:gap-8 overflow-x-auto no-scrollbar">
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center shadow-lg shadow-green-600/20">
+              <Trophy className="text-white w-5 h-5" />
+            </div>
+            <span className="hidden sm:inline font-black text-xs tracking-tighter uppercase">Mi Álbum</span>
+          </Link>
+          
+          <nav className="flex items-center gap-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-xl transition-all flex-shrink-0",
+                    isActive 
+                      ? "bg-green-600/10 text-green-500" 
+                      : "text-zinc-500 hover:text-white hover:bg-zinc-800/50"
+                  )}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-xs font-bold hidden md:inline">{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+          <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-1.5 md:px-3 md:py-2">
+            <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-zinc-700/50">
+              {userProfile?.photoURL ? (
+                <img src={userProfile.photoURL} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon className="w-4 h-4 md:w-5 md:h-5 text-zinc-600" />
+              )}
+            </div>
+            <div className="hidden xs:block min-w-0">
+              <p className="text-[10px] md:text-xs font-black text-white truncate max-w-[80px] uppercase tracking-tighter">
+                {userProfile?.displayName?.split(' ')[0]}
+              </p>
+              <p className="text-[8px] text-zinc-500 font-bold tracking-widest leading-none mt-0.5">ESTADO: {userProfile?.status}</p>
+            </div>
+          </div>
+          <button 
+            onClick={onSignOut}
+            className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+            title="Sali"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+
+function AuthGuard({ children, userProfile, logout }: { children: React.ReactNode, userProfile: UserProfile | null, logout: () => void }) {
+  const [user, loading] = useAuthState(auth);
+
+  if (loading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-zinc-950">
+       <Trophy className="w-12 h-12 text-green-500 animate-bounce" />
+    </div>
+  );
+
+  if (!user) return <Navigate to="/login" />;
+
+  // Wait for profile if we are logged in
+  if (!userProfile) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-zinc-950">
+         <div className="flex flex-col items-center gap-4">
+           <Trophy className="w-12 h-12 text-green-500 animate-spin" />
+           <p className="text-zinc-500 text-sm font-bold animate-pulse uppercase tracking-widest">Cargando Perfil...</p>
+         </div>
+      </div>
+    );
+  }
+
+  if (userProfile.status !== 'approved' && userProfile.role !== 'admin') {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-zinc-950 p-6">
+        <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 p-10 rounded-[2.5rem] shadow-2xl text-center">
+          <Clock className="w-20 h-20 text-amber-500 mx-auto mb-6 opacity-80" />
+          <h2 className="text-3xl font-black text-white mb-4 uppercase tracking-tight">Acceso Pendiente</h2>
+          <p className="text-zinc-400 mb-8 text-lg">
+            Tu cuenta ha sido registrada con éxito, pero un administrador debe aprobar tu acceso. Por favor, vuelve más tarde.
+          </p>
+          <button 
+            onClick={logout}
+            className="w-full py-4 bg-zinc-800 text-white rounded-2xl font-bold hover:bg-zinc-700 transition-colors uppercase tracking-widest"
+          >
+            Cerrar Sesión
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+export default function App() {
+  const [user] = useAuthState(auth);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      const unsub = onSnapshot(doc(db, 'users', user.uid), (doc) => {
+        if (doc.exists()) {
+          setUserProfile(doc.data() as UserProfile);
+        }
+      });
+      return () => unsub();
+    } else {
+      setUserProfile(null);
+    }
+  }, [user]);
+
+  const handleLogout = () => {
+    signOut(auth);
+  };
+
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-green-500/30 selection:text-green-500 flex flex-col">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/*" element={
+            <AuthGuard userProfile={userProfile} logout={handleLogout}>
+              <TopNav userProfile={userProfile} onSignOut={handleLogout} />
+              <main className="flex-1 overflow-y-auto pt-16 h-screen">
+                <div className="max-w-7xl mx-auto p-4 md:p-8">
+                   <Routes>
+                      <Route path="/" element={<Dashboard userProfile={userProfile} />} />
+                      <Route path="/album" element={<Album userProfile={userProfile} />} />
+                      <Route path="/market" element={<Marketplace userProfile={userProfile} />} />
+                      <Route path="/chat" element={<Chat userProfile={userProfile} />} />
+                      <Route path="/chat/:chatId" element={<Chat userProfile={userProfile} />} />
+                      {userProfile?.role === 'admin' && (
+                        <Route path="/admin" element={<AdminPanel />} />
+                      )}
+                      <Route path="*" element={<Navigate to="/" />} />
+                   </Routes>
+                </div>
+              </main>
+            </AuthGuard>
+          } />
+        </Routes>
+      </div>
+    </BrowserRouter>
+  );
+}
+

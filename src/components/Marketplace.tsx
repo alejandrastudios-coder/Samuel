@@ -1,0 +1,223 @@
+import React, { useEffect, useState } from 'react';
+import { collection, query, onSnapshot, doc, getDoc, setDoc, serverTimestamp, where, getDocs, or } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
+import { UserProfile, AlbumProgress, Chat } from '../types';
+import { TEAMS } from '../constants';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { Search, MapPin, MessageSquare, Repeat, User as UserIcon, ArrowRightLeft, ArrowLeft, LogOut } from 'lucide-react';
+import { cn } from '../lib/utils';
+
+export default function Marketplace({ userProfile }: { userProfile: UserProfile | null }) {
+  const [allProgress, setAllProgress] = useState<AlbumProgress[]>([]);
+  const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
+  const [, loading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!userProfile) return;
+
+    let unsubProgress: (() => void) | undefined;
+    let unsubUsers: (() => void) | undefined;
+
+    if (userProfile.status === 'approved' || userProfile.role === 'admin') {
+      // 1. Fetch all progress
+      unsubProgress = onSnapshot(
+        collection(db, 'album_progress'), 
+        (snap) => {
+          const data = snap.docs.map(d => d.data() as AlbumProgress);
+          setAllProgress(data.filter(p => p.userId !== userProfile.userId));
+        },
+        (error) => console.error("Error fetching progress:", error)
+      );
+
+      // 2. Fetch all users
+      unsubUsers = onSnapshot(
+        collection(db, 'users'), 
+        (snap) => {
+          const usersMap: Record<string, UserProfile> = {};
+          snap.docs.forEach(d => {
+            usersMap[d.id] = d.data() as UserProfile;
+          });
+          setAllUsers(usersMap);
+        },
+        (error) => console.error("Error fetching users:", error)
+      );
+    }
+
+    return () => {
+      unsubProgress?.();
+      unsubUsers?.();
+    };
+  }, [userProfile]);
+
+  const [myProgress, setMyProgress] = useState<AlbumProgress | null>(null);
+  useEffect(() => {
+    if (userProfile) {
+      const unsub = onSnapshot(
+        doc(db, 'album_progress', userProfile.userId), 
+        (doc) => {
+          if (doc.exists()) setMyProgress(doc.data() as AlbumProgress);
+        },
+        (error) => console.error("Error fetching my progress:", error)
+      );
+      return unsub;
+    }
+  }, [userProfile]);
+
+  const matches = allProgress.map(p => {
+    const peerUser = allUsers[p.userId];
+    if (!peerUser || peerUser.status !== 'approved') return null;
+
+    const peerRepeated = Object.entries(p.stickers).filter(([_, s]) => s === 2).map(([id]) => id);
+    const myRepeated = Object.entries(myProgress?.stickers || {}).filter(([_, s]) => s === 2).map(([id]) => id);
+
+    const theyCanGiveMe = peerRepeated.filter(id => (myProgress?.stickers[id] || 0) === 0);
+    const iCanGiveThem = myRepeated.filter(id => (p.stickers[id] || 0) === 0);
+
+    if (theyCanGiveMe.length === 0 && iCanGiveThem.length === 0) return null;
+
+    const getLabel = (id: string) => {
+      const [teamName, num] = id.split('-');
+      return `${teamName} ${num}`;
+    };
+
+    return {
+      userId: p.userId,
+      user: peerUser,
+      iNeed: theyCanGiveMe,
+      theyNeed: iCanGiveThem,
+      getLabel
+    };
+  }).filter(Boolean);
+
+  const startChat = async (peerUserId: string) => {
+    if (!userProfile) return;
+    const participants = [userProfile.userId, peerUserId].sort();
+    const chatId = participants.join('_');
+    
+    const chatRef = doc(db, 'chats', chatId);
+    const chatSnap = await getDoc(chatRef);
+    
+    if (!chatSnap.exists()) {
+      const initialMessage = '¡Hola! He visto tus repetidas en el Market y me interesan.';
+      await setDoc(chatRef, {
+        participants,
+        lastMessage: initialMessage,
+        updatedAt: serverTimestamp()
+      });
+      
+      // Also add the actual message to the subcollection
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+        senderId: userProfile.userId,
+        text: initialMessage,
+        createdAt: serverTimestamp()
+      });
+    }
+    
+    navigate(`/chat/${chatId}`);
+  };
+
+  return (
+    <div className="space-y-8">
+      <header className="flex items-center gap-4">
+        <button 
+          onClick={() => navigate(-1)}
+          className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-zinc-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-6 h-6" />
+        </button>
+        <div>
+          <h2 className="text-3xl font-bold text-white tracking-tight">Zona de Intercambio</h2>
+          <p className="text-zinc-400 mt-1">Conecta con coleccionistas que tienen lo que te falta.</p>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {matches.length > 0 ? matches.map((match: any) => (
+          <motion.div 
+            key={match.userId}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex flex-col gap-6 hover:border-green-500/30 transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden border border-zinc-700">
+                  {match.user.photoURL ? (
+                    <img src={match.user.photoURL} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="text-zinc-500 w-8 h-8" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="text-white font-bold text-lg">{match.user.displayName}</h4>
+                  <div className="flex items-center gap-2 text-zinc-500 text-xs">
+                    <MapPin className="w-3 h-3" />
+                    <span>Conectado recientemente</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => startChat(match.userId)}
+                className="bg-white text-black p-3 rounded-2xl hover:bg-green-500 hover:text-white transition-all active:scale-95 shadow-lg shadow-white/5"
+              >
+                <MessageSquare className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50">
+                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <ArrowRightLeft className="w-3 h-3" /> Tiene para ti
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {match.iNeed.slice(0, 5).map((id: string) => (
+                    <span key={id} className="text-[10px] font-bold px-2 py-1 bg-zinc-800 text-zinc-400 rounded-md border border-zinc-700">
+                      {match.getLabel(id)}
+                    </span>
+                  ))}
+                  {match.iNeed.length > 5 && (
+                    <span className="text-[10px] font-bold px-2 py-1 text-zinc-600">+{match.iNeed.length - 5}</span>
+                  )}
+                </div>
+              </div>
+              <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50">
+                <p className="text-[10px] font-black text-green-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                   <Repeat className="w-3 h-3" /> Tú tienes para él
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {match.theyNeed.slice(0, 5).map((id: string) => (
+                    <span key={id} className="text-[10px] font-bold px-2 py-1 bg-zinc-800 text-zinc-400 rounded-md border border-zinc-700">
+                      {match.getLabel(id)}
+                    </span>
+                  ))}
+                   {match.theyNeed.length > 5 && (
+                    <span className="text-[10px] font-bold px-2 py-1 text-zinc-600">+{match.theyNeed.length - 5}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => startChat(match.userId)}
+              className="w-full py-3 bg-zinc-800 text-white rounded-xl text-xs font-bold hover:bg-zinc-700 transition-colors uppercase tracking-widest mt-2"
+            >
+              Negociar Intercambio
+            </button>
+          </motion.div>
+        )) : (
+          <div className="col-span-2 text-center py-20 bg-zinc-900 shadow-inner rounded-[3rem] border border-zinc-800 border-dashed">
+            <div className="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Search className="w-10 h-10 text-zinc-600" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Sin coincidencias exactas</h3>
+            <p className="text-zinc-500 max-w-sm mx-auto">
+              Sigue completando tu álbum. Aparecerán usuarios cuando tengan repetidas las que te faltan.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

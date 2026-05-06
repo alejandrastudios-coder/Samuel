@@ -1,0 +1,61 @@
+export const TEAMS = [
+  "México", "South África", "Korea del sur", "Czechia", "Brazil", "Morocco", "Haití", "Scotland", 
+  "Germany", "Curacao", "Cote d'Ivoire", "Ecuador", "Belgium", "Egypt", "Irán", "New Zealand", 
+  "France", "Senegal", "Iraq", "Norway", "Portugal", "Congo DR", "Uzbekistan", "Colombia", 
+  "Canadá", "Bosnia-Herzegovina", "Qatar", "Switzerland", "USA", "Paraguay", "Australia", 
+  "Turkiye", "Netherlands", "Japan", "Sweden", "Tunisia", "Spain", "Cabo Verde", "Saudi Arabia", 
+  "Argentina", "Algeria", "Austria", "England", "Croatia", "Ghana", "Panamá"
+];
+
+export const PRIZES_COUNT = 8;
+export const COCA_COLA_COUNT = 12;
+export const STICKERS_PER_TEAM = 20;
+
+export const FLAGS: Record<string, string> = {
+  "México": "https://flagcdn.com/mx.svg",
+  "South África": "https://flagcdn.com/za.svg",
+  "Korea del sur": "https://flagcdn.com/kr.svg",
+  "Czechia": "https://flagcdn.com/cz.svg",
+  "Brazil": "https://flagcdn.com/br.svg",
+  "Morocco": "https://flagcdn.com/ma.svg",
+  "Haití": "https://flagcdn.com/ht.svg",
+  "Scotland": "https://flagcdn.com/gb-sct.svg",
+  "Germany": "https://flagcdn.com/de.svg",
+  "Curacao": "https://flagcdn.com/cw.svg",
+  "Cote d'Ivoire": "https://flagcdn.com/ci.svg",
+  "Ecuador": "https://flagcdn.com/ec.svg",
+  "Belgium": "https://flagcdn.com/be.svg",
+  "Egypt": "https://flagcdn.com/eg.svg",
+  "Irán": "https://flagcdn.com/ir.svg",
+  "New Zealand": "https://flagcdn.com/nz.svg",
+  "France": "https://flagcdn.com/fr.svg",
+  "Senegal": "https://flagcdn.com/sn.svg",
+  "Iraq": "https://flagcdn.com/iq.svg",
+  "Norway": "https://flagcdn.com/no.svg",
+  "Portugal": "https://flagcdn.com/pt.svg",
+  "Congo DR": "https://flagcdn.com/cd.svg",
+  "Uzbekistan": "https://flagcdn.com/uz.svg",
+  "Colombia": "https://flagcdn.com/co.svg",
+  "Canadá": "https://flagcdn.com/ca.svg",
+  "Bosnia-Herzegovina": "https://flagcdn.com/ba.svg",
+  "Qatar": "https://flagcdn.com/qa.svg",
+  "Switzerland": "https://flagcdn.com/ch.svg",
+  "USA": "https://flagcdn.com/us.svg",
+  "Paraguay": "https://flagcdn.com/py.svg",
+  "Australia": "https://flagcdn.com/au.svg",
+  "Turkiye": "https://flagcdn.com/tr.svg",
+  "Netherlands": "https://flagcdn.com/nl.svg",
+  "Japan": "https://flagcdn.com/jp.svg",
+  "Sweden": "https://flagcdn.com/se.svg",
+  "Tunisia": "https://flagcdn.com/tn.svg",
+  "Spain": "https://flagcdn.com/es.svg",
+  "Cabo Verde": "https://flagcdn.com/cv.svg",
+  "Saudi Arabia": "https://flagcdn.com/sa.svg",
+  "Argentina": "https://flagcdn.com/ar.svg",
+  "Algeria": "https://flagcdn.com/dz.svg",
+  "Austria": "https://flagcdn.com/at.svg",
+  "England": "https://flagcdn.com/gb-eng.svg",
+  "Croatia": "https://flagcdn.com/hr.svg",
+  "Ghana": "https://flagcdn.com/gh.svg",
+  "Panamá": "https://flagcdn.com/pa.svg"
+};

@@ -1,0 +1,8 @@
+{
+  "name": "Mi Álbum 2026",
+  "description": "Una aplicación completa para organizar tu álbum del Mundial 2026, gestionar estampas y realizar intercambios con otros usuarios en tiempo real.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}

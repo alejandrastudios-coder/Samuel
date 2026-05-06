@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with registration status and role.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "status", "role"]
+    },
+    "AlbumProgress": {
+      "title": "User Album Progress",
+      "description": "Tracks which stickers a user has and its duplicates.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "stickers": { 
+          "type": "object",
+          "description": "Map of stickerId (e.g., MEX-01) to status: 0=missing, 1=owned, 2=repeated"
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "stickers"]
+    },
+    "Chat": {
+      "title": "Chat Session",
+      "description": "A conversation between two users.",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["participants"]
+    },
+    "Message": {
+      "title": "Chat Message",
+      "description": "A message within a chat.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "text", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User registration and role information."
+    },
+    "/album_progress/{userId}": {
+      "schema": "AlbumProgress",
+      "description": "The sticker collection status for each user."
+    },
+    "/chats/{chatId}": {
+      "schema": "Chat",
+      "description": "Conversations between users for exchanges."
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages in the conversation."
+    }
+  }
+}

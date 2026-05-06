@@ -1,0 +1,89 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // -------------------------------------------------------------------------
+    // HELPERS
+    // -------------------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'samuel@album2026.com' ||
+        request.auth.token.email == 'alejandrastudios@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isApproved() {
+      return isSignedIn() && (
+        isAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved')
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // -------------------------------------------------------------------------
+    // COLLECTIONS
+    // -------------------------------------------------------------------------
+
+    // 1. Users Collection
+    match /users/{userId} {
+      // Users can see other profiles (needed for discovery/chat)
+      allow get: if isSignedIn();
+      // Approved users and admins can list all users (needed for marketplace/discovery)
+      allow list: if isApproved();
+      
+      // Allow registration (self-create) or admin creation
+      allow create: if (isSignedIn() && request.auth.uid == userId) || isAdmin();
+      
+      // Owner can update basic info, Admin can update everything
+      allow update: if (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL'])) 
+                   || isAdmin();
+      
+      allow delete: if isAdmin();
+    }
+
+    // 2. Album Progress
+    match /album_progress/{userId} {
+      // Any approved user can read other progresses to find matches
+      allow read: if isApproved() || isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+    }
+
+    // 3. Chats
+    match /chats/{chatId} {
+      allow read, update: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
+      // Create is allowed if user is in participants and approved
+      allow create: if isApproved() && (request.auth.uid in request.resource.data.participants || isAdmin());
+    }
+    
+    // 4. Messages
+    match /chats/{chatId}/messages/{msgId} {
+      // Using get() on parent chat to verify participant
+      allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
+      allow create: if isApproved() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
+    }
+
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

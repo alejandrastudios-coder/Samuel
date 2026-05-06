@@ -1,0 +1,333 @@
+import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, getDocs, setDoc, where, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { UserProfile, AlbumProgress, StickerStatus } from '../types';
+import { TEAMS, STICKERS_PER_TEAM, PRIZES_COUNT, COCA_COLA_COUNT, FLAGS } from '../constants';
+import { motion, AnimatePresence } from 'motion/react';
+import { Search, Trophy, Star, Repeat, ChevronRight, Check, ArrowLeft, LogOut, User as UserIcon, X, MessageSquare } from 'lucide-react';
+import { cn } from '../lib/utils';
+
+interface StickerGroup {
+  id: string;
+  name: string;
+  count: number;
+  type: 'team' | 'special';
+  flag?: string;
+}
+
+export default function Album({ userProfile }: { userProfile: UserProfile | null }) {
+  const [progress, setProgress] = useState<AlbumProgress | null>(null);
+  const [search, setSearch] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [matchingUsers, setMatchingUsers] = useState<{ user: UserProfile, stickerId: string }[]>([]);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+  const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const findWhoHasIt = async (stickerId: string) => {
+    setLoadingMatches(true);
+    setIsMatchModalOpen(true);
+    try {
+      // 1. Find all users who have this sticker repeated
+      // We'll query all album_progress but since we can't deep query map values effectively in a single simple query here without specific indexes, 
+      // we'll fetch all and filter client side for now (given small scale) OR we could optimize if needed.
+      const querySnap = await getDocs(collection(db, 'album_progress'));
+      const usersSnap = await getDocs(collection(db, 'users'));
+      
+      const usersMap: Record<string, UserProfile> = {};
+      usersSnap.docs.forEach(d => usersMap[d.id] = d.data() as UserProfile);
+
+      const matches = querySnap.docs
+        .map(d => d.data() as AlbumProgress)
+        .filter(p => p.userId !== userProfile?.userId && p.stickers[stickerId] === 2)
+        .map(p => ({ user: usersMap[p.userId], stickerId }))
+        .filter(m => m.user && m.user.status === 'approved');
+
+      setMatchingUsers(matches);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingMatches(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userProfile) {
+      return onSnapshot(
+        doc(db, 'album_progress', userProfile.userId), 
+        (doc) => {
+          if (doc.exists()) {
+            setProgress(doc.data() as AlbumProgress);
+          }
+        },
+        (error) => console.error("Error fetching progress:", error)
+      );
+    }
+  }, [userProfile]);
+
+  const groups: StickerGroup[] = useMemo(() => {
+    const list: StickerGroup[] = TEAMS.map(team => ({
+      id: team,
+      name: team,
+      count: STICKERS_PER_TEAM,
+      type: 'team',
+      flag: FLAGS[team] || 'https://flagcdn.com/un.svg'
+    }));
+
+    list.push({ id: 'PREMIOS', name: 'Premios', count: PRIZES_COUNT, type: 'special' });
+    list.push({ id: 'COCA-COLA', name: 'Coca Cola', count: COCA_COLA_COUNT, type: 'special' });
+    
+    return list;
+  }, []);
+
+  const filteredGroups = groups.filter(g => 
+    g.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const toggleSticker = async (stickerId: string) => {
+    if (!userProfile) return;
+    const currentStatus = progress?.stickers[stickerId] || 0;
+    const nextStatus: StickerStatus = ((currentStatus + 1) % 3) as StickerStatus;
+    
+    try {
+      await updateDoc(doc(db, 'album_progress', userProfile.userId), {
+        [`stickers.${stickerId}`]: nextStatus,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Error updating sticker:", error);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 bg-zinc-950/80 backdrop-blur-xl z-20 py-4 -mt-4">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate(-1)}
+            className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-zinc-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Mi Colección</h2>
+            <p className="text-sm text-zinc-500">Toca para cambiar estado: Faltante → Obtenida → Repetida</p>
+          </div>
+        </div>
+        <div className="relative flex-1 md:w-72">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <input 
+            type="text"
+            placeholder="Buscar selección..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
+          />
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredGroups.map((group, idx) => {
+          const ownedInGroup = Array.from({ length: group.count }).filter((_, i) => {
+            const id = `${group.id}-${i + 1}`;
+            return (progress?.stickers[id] || 0) >= 1;
+          }).length;
+          
+          const isCompleted = ownedInGroup === group.count;
+
+          return (
+            <motion.div 
+              key={group.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.02 }}
+              className={cn(
+                "bg-zinc-900/50 border border-zinc-800 rounded-3xl overflow-hidden group transition-all duration-300",
+                isCompleted ? "border-green-500/30 bg-green-950/5" : "hover:border-zinc-700"
+              )}
+            >
+              <div className="p-5 flex items-center justify-between border-b border-zinc-800/50">
+                <div className="flex items-center gap-4">
+                  {group.type === 'team' ? (
+                    <img src={group.flag} alt={group.name} className="w-8 h-6 object-cover rounded-sm shadow-sm" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-green-600/20 flex items-center justify-center">
+                       {group.id === 'PREMIOS' ? <Trophy className="w-4 h-4 text-green-500" /> : <Star className="w-4 h-4 text-green-500" />}
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-white font-bold">{group.name}</h4>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-tighter font-bold">
+                      {ownedInGroup}/{group.count} ESTAMPAS
+                    </p>
+                  </div>
+                </div>
+                {isCompleted && (
+                  <div className="bg-green-600/20 text-green-500 p-1.5 rounded-full">
+                    <Check className="w-4 h-4" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-4 grid grid-cols-5 gap-2">
+                {Array.from({ length: group.count }).map((_, i) => {
+                  const stickerId = `${group.id}-${i + 1}`;
+                  const status = progress?.stickers[stickerId] || 0;
+                  return (
+                    <div key={stickerId} className="relative group">
+                      <button
+                        onClick={() => toggleSticker(stickerId)}
+                        className={cn(
+                          "w-full aspect-square rounded-lg text-[10px] font-black flex items-center justify-center transition-all relative border",
+                          status === 0 && "bg-zinc-900 border-zinc-800 text-zinc-700 hover:border-zinc-600",
+                          status === 1 && "bg-green-600 border-green-500 text-white shadow-[0_0_10px_rgba(22,163,74,0.3)]",
+                          status === 2 && "bg-amber-500 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                        )}
+                      >
+                        {i + 1}
+                        {status === 2 && (
+                          <div className="absolute -top-1 -right-1 bg-black text-amber-500 rounded-full p-0.5 border border-amber-500/50 scale-75">
+                             <Repeat className="w-2.5 h-2.5" />
+                          </div>
+                        )}
+                      </button>
+                      {status === 0 && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); findWhoHasIt(stickerId); }}
+                          className="absolute -top-1 -right-1 bg-zinc-800 text-zinc-400 rounded-full p-1 border border-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity hover:text-green-500"
+                          title="¿Quién la tiene?"
+                        >
+                          <Search className="w-2.5 h-2.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      <AnimatePresence>
+        {isMatchModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMatchModalOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-[2.5rem] shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/20">
+                <div>
+                  <h3 className="text-xl font-bold text-white">¿Quién la tiene repetida?</h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    {(() => {
+                      const id = matchingUsers[0]?.stickerId;
+                      if (!id) return '...';
+                      const [teamName, num] = id.split('-');
+                      return `Estampa ${teamName} ${num}`;
+                    })()}
+                  </p>
+                </div>
+                <button onClick={() => setIsMatchModalOpen(false)} className="p-2 hover:bg-zinc-800 rounded-xl transition-colors">
+                  <X className="w-5 h-5 text-zinc-500" />
+                </button>
+              </div>
+
+              <div className="p-6 max-h-[60vh] overflow-y-auto">
+                {loadingMatches ? (
+                  <div className="py-12 flex flex-col items-center gap-4 text-zinc-500">
+                    <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs font-bold uppercase tracking-widest">Buscando Coleccionistas...</p>
+                  </div>
+                ) : matchingUsers.length > 0 ? (
+                  <div className="space-y-4">
+                    {matchingUsers.map((match, idx) => (
+                      <motion.div 
+                        key={match.user.userId}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="bg-zinc-800/50 border border-zinc-700/50 p-4 rounded-2xl flex items-center justify-between group hover:border-green-500/30 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-zinc-700 overflow-hidden">
+                            {match.user.photoURL ? (
+                              <img src={match.user.photoURL} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <UserIcon className="w-full h-full p-2 text-zinc-500" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-white">{match.user.displayName}</p>
+                            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">@{match.user.username}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            if (!userProfile) return;
+                            const participants = [userProfile.userId, match.user.userId].sort();
+                            const chatId = participants.join('_');
+                            
+                            const chatRef = doc(db, 'chats', chatId);
+                            const chatSnap = await getDoc(chatRef);
+                            
+                            if (!chatSnap.exists()) {
+                              const initialMessage = `¡Hola! Vi que tienes la estampa de ${match.stickerId.split('-')[0]} ${match.stickerId.split('-')[1]} repetida y me interesa.`;
+                              await setDoc(chatRef, {
+                                participants,
+                                lastMessage: initialMessage,
+                                updatedAt: serverTimestamp()
+                              });
+                              
+                              await addDoc(collection(db, 'chats', chatId, 'messages'), {
+                                senderId: userProfile.userId,
+                                text: initialMessage,
+                                createdAt: serverTimestamp()
+                              });
+                            }
+                            
+                            navigate(`/chat/${chatId}`);
+                          }}
+                          className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 active:scale-95"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-zinc-500">
+                    <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                       <Repeat className="w-8 h-8 opacity-20" />
+                    </div>
+                    <p className="text-sm font-medium">Nadie tiene esta estampa repetida aún.</p>
+                    <p className="text-[10px] uppercase mt-1 tracking-widest">Sigue intentando más tarde</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-6 bg-zinc-950/50 border-t border-zinc-800">
+                <button 
+                  onClick={() => setIsMatchModalOpen(false)}
+                  className="w-full py-4 bg-zinc-800 text-white rounded-2xl font-bold text-sm tracking-widest uppercase hover:bg-zinc-700 transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
