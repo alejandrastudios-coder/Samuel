@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, onSnapshot, doc, getDoc, setDoc, serverTimestamp, where, getDocs, or } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, getDoc, setDoc, addDoc, serverTimestamp, where, getDocs, or } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { UserProfile, AlbumProgress, Chat } from '../types';
 import { TEAMS } from '../constants';

@@ -118,10 +118,10 @@ function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, o
 }
 
 
-function AuthGuard({ children, userProfile, logout }: { children: React.ReactNode, userProfile: UserProfile | null, logout: () => void }) {
+function AuthGuard({ children, userProfile, profileLoading, logout }: { children: React.ReactNode, userProfile: UserProfile | null, profileLoading: boolean, logout: () => void }) {
   const [user, loading] = useAuthState(auth);
 
-  if (loading) return (
+  if (loading || profileLoading) return (
     <div className="h-screen w-full flex items-center justify-center bg-zinc-950">
        <WorldCupBall className="w-20 h-20" animate />
     </div>
@@ -132,11 +132,19 @@ function AuthGuard({ children, userProfile, logout }: { children: React.ReactNod
   // Wait for profile if we are logged in
   if (!userProfile) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-zinc-950">
-         <div className="flex flex-col items-center gap-4">
-           <WorldCupBall className="w-12 h-12" animate />
-
-           <p className="text-zinc-500 text-sm font-bold animate-pulse uppercase tracking-widest">Cargando Perfil...</p>
+      <div className="h-screen w-full flex items-center justify-center bg-zinc-950 p-6">
+         <div className="max-w-md w-full glass-panel p-10 rounded-[2.5rem] flex flex-col items-center gap-6 text-center">
+           <WorldCupBall className="w-16 h-16" animate />
+           <div>
+             <h2 className="text-2xl font-black text-white mb-2">PERFIL NO ENCONTRADO</h2>
+             <p className="text-zinc-500 text-sm font-bold uppercase tracking-widest">No pudimos cargar tus datos de usuario.</p>
+           </div>
+           <button 
+             onClick={logout}
+             className="w-full py-4 bg-red-500/10 text-red-500 rounded-2xl font-bold hover:bg-red-500/20 transition-all uppercase tracking-widest mt-4"
+           >
+             Regresar al Login
+           </button>
          </div>
       </div>
     );
@@ -168,17 +176,26 @@ function AuthGuard({ children, userProfile, logout }: { children: React.ReactNod
 export default function App() {
   const [user] = useAuthState(auth);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
+      setProfileLoading(true);
       const unsub = onSnapshot(doc(db, 'users', user.uid), (doc) => {
         if (doc.exists()) {
           setUserProfile(doc.data() as UserProfile);
+        } else {
+          setUserProfile(null);
         }
+        setProfileLoading(false);
+      }, (error) => {
+        console.error("Error loading profile:", error);
+        setProfileLoading(false);
       });
       return () => unsub();
     } else {
       setUserProfile(null);
+      setProfileLoading(false);
     }
   }, [user]);
 
@@ -192,7 +209,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/*" element={
-            <AuthGuard userProfile={userProfile} logout={handleLogout}>
+            <AuthGuard userProfile={userProfile} profileLoading={profileLoading} logout={handleLogout}>
               <TopNav userProfile={userProfile} onSignOut={handleLogout} />
               <main className="flex-1 overflow-y-auto pt-16 h-screen">
                 <div className="max-w-7xl mx-auto p-4 md:p-8">

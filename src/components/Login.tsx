@@ -4,6 +4,7 @@ import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, s
 import { doc, getDoc, setDoc, serverTimestamp, query, collection, where, getDocs, updateDoc } from 'firebase/firestore';
 import { motion } from 'motion/react';
 import { Trophy, Lock, User as UserIcon, UserPlus, LogIn } from 'lucide-react';
+import { UserProfile } from '../types';
 import { WorldCupBall } from './ui/WorldCupBall';
 
 export default function Login() {
@@ -84,10 +85,32 @@ export default function Login() {
         
         // If it's samuel, ensure the doc has admin role
         if (username.toLowerCase().trim() === 'samuel') {
-           await updateDoc(doc(db, 'users', userCredential.user.uid), {
-             role: 'admin',
-             status: 'approved'
-           });
+           const userRef = doc(db, 'users', userCredential.user.uid);
+           const userSnap = await getDoc(userRef);
+           
+           if (!userSnap.exists()) {
+             // Create profile if missing
+             await setDoc(userRef, {
+               userId: userCredential.user.uid,
+               username: 'samuel',
+               displayName: 'Samuel',
+               email: email,
+               role: 'admin',
+               status: 'approved',
+               createdAt: serverTimestamp()
+             });
+             // Also ensure album_progress exists
+             await setDoc(doc(db, 'album_progress', userCredential.user.uid), {
+               userId: userCredential.user.uid,
+               stickers: {},
+               updatedAt: serverTimestamp()
+             });
+           } else {
+             await updateDoc(userRef, {
+               role: 'admin',
+               status: 'approved'
+             });
+           }
         }
         
         console.log('Login successful');

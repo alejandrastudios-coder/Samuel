@@ -6,6 +6,7 @@ import { UserProfile, AlbumProgress } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, PRIZES_COUNT, COCA_COLA_COUNT } from '../constants';
 import { motion } from 'motion/react';
 import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft } from 'lucide-react';
+import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 
 export default function Dashboard({ userProfile }: { userProfile: UserProfile | null }) {
@@ -243,10 +244,3 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     </div>
   );
 }
-
-const CheckCircle2 = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
-);
-const MessageCircle = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
-);
