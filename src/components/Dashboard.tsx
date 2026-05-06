@@ -21,16 +21,10 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     };
     checkStandalone();
     
-    // Standard handler for Chrome/Android
-    const handler = (e: any) => {
-      e.preventDefault();
-      // We don't hide the UI, we just keep the event for later
-      window.addEventListener('beforeinstallprompt', (ev) => {
-        (window as any).deferredPrompt = ev;
-      });
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    // Listen for the custom event from main.tsx
+    const handler = () => setIsStandalone(false);
+    window.addEventListener('trigger-install-prompt', handler);
+    return () => window.removeEventListener('trigger-install-prompt', handler);
   }, []);
 
   const triggerInstall = () => {

@@ -218,6 +218,36 @@ export default function App() {
     }
   }, [user]);
 
+  // Badge API Logic: Update icon badge based on unread messages
+  useEffect(() => {
+    if (user && 'setAppBadge' in navigator) {
+      // Small delay to ensure DB is ready
+      const q = query(
+        collection(db, 'chats'),
+        where('participants', 'array-contains', user.uid)
+      );
+
+      const unsub = onSnapshot(q, (snapshot) => {
+        let unreadTotal = 0;
+        snapshot.docs.forEach(doc => {
+          const data = doc.data();
+          // Check if last message was not by current user and chat hasn't been read
+          if (data.lastMessageBy && data.lastMessageBy !== user.uid && data.unreadCount?.[user.uid]) {
+            unreadTotal += data.unreadCount[user.uid];
+          }
+        });
+
+        if (unreadTotal > 0) {
+          (navigator as any).setAppBadge(unreadTotal).catch(console.error);
+        } else {
+          (navigator as any).clearAppBadge().catch(console.error);
+        }
+      });
+      
+      return () => unsub();
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       setProfileLoading(true);

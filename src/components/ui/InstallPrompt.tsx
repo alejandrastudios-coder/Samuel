@@ -25,17 +25,25 @@ export const InstallPrompt: React.FC = () => {
     // Listen for custom trigger
     const triggerHandler = () => {
       const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      // Get the prompt directly from window to be safer
+      const prompt = deferredPrompt || (window as any).deferredPrompt;
+      
       if (ios) {
         setIsVisible(true);
-      } else if (deferredPrompt) {
+      } else if (prompt) {
         handleInstallClick();
       } else {
-        // If no prompt event yet, show a generic message or just show the UI
         setIsVisible(true);
       }
     };
 
     window.addEventListener('trigger-install-prompt', triggerHandler);
+
+    // Initial check for deferredPrompt on window
+    if ((window as any).deferredPrompt) {
+      setDeferredPrompt((window as any).deferredPrompt);
+      setIsVisible(true);
+    }
 
     // If it's iOS and not already in standalone mode, show instructions
     if (ios && !(window.navigator as any).standalone) {
@@ -50,18 +58,24 @@ export const InstallPrompt: React.FC = () => {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    const prompt = deferredPrompt || (window as any).deferredPrompt;
+    if (!prompt) {
+      // If we still don't have it, we show instructions anyway (fallback)
+      if (!isIOS) {
+        alert('Para instalar manualmente: Pulsa los tres puntos (⋮) del navegador y selecciona "Instalar aplicación" o "Añadir a pantalla de inicio".');
+      }
+      return;
+    }
 
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    prompt.prompt();
+    const { outcome } = await prompt.userChoice;
     
     if (outcome === 'accepted') {
       console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
+      setDeferredPrompt(null);
+      (window as any).deferredPrompt = null;
     }
     
-    setDeferredPrompt(null);
     setIsVisible(false);
   };
 
