@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress } from '../types';
-import { TEAMS, STICKERS_PER_TEAM, PRIZES_COUNT, COCA_COLA_COUNT } from '../constants';
+import { TEAMS, STICKERS_PER_TEAM, UFW_COUNT, COCA_COLA_COUNT } from '../constants';
 import { motion } from 'motion/react';
 import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -50,7 +50,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     }
   }, [userProfile]);
 
-  const totalPossible = (TEAMS.length * STICKERS_PER_TEAM) + PRIZES_COUNT + COCA_COLA_COUNT;
+  const totalPossible = (TEAMS.length * STICKERS_PER_TEAM) + UFW_COUNT + COCA_COLA_COUNT;
   const stickers = progress?.stickers || {};
   const ownedCount = Object.values(stickers).filter(s => s >= 1).length;
   const repeatedCount = Object.values(stickers).reduce((acc, s) => acc + (s > 1 ? s - 1 : 0), 0);

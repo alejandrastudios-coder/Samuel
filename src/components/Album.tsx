@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, getDocs, setDoc, where, getDoc, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress, StickerStatus } from '../types';
-import { TEAMS, STICKERS_PER_TEAM, PRIZES_COUNT, COCA_COLA_COUNT, FLAGS } from '../constants';
+import { TEAMS, STICKERS_PER_TEAM, UFW_COUNT, COCA_COLA_COUNT, FLAGS } from '../constants';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Trophy, Star, Repeat, ChevronRight, Check, ArrowLeft, LogOut, User as UserIcon, X, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -85,7 +85,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
       flag: FLAGS[team] || 'https://flagcdn.com/un.svg'
     }));
 
-    list.push({ id: 'PREMIOS', name: 'Premios', count: PRIZES_COUNT, type: 'special' });
+    list.push({ id: 'UFW', name: 'UFW', count: UFW_COUNT, type: 'special' });
     list.push({ id: 'COCA-COLA', name: 'Coca Cola', count: COCA_COLA_COUNT, type: 'special' });
     
     return list;
@@ -173,7 +173,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                     <img src={group.flag} alt={group.name} className="w-8 h-6 object-cover rounded-sm shadow-sm" />
                   ) : (
                     <div className="w-8 h-8 rounded-lg bg-green-600/20 flex items-center justify-center">
-                       {group.id === 'PREMIOS' ? <Trophy className="w-4 h-4 text-green-500" /> : <Star className="w-4 h-4 text-green-500" />}
+                       {group.id === 'UFW' ? <Trophy className="w-4 h-4 text-green-500" /> : <Star className="w-4 h-4 text-green-500" />}
                     </div>
                   )}
                   <div className="text-left">
