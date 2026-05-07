@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId } from '../constants';
 import { motion } from 'motion/react';
-import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw } from 'lucide-react';
+import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RepeatedList } from './RepeatedList';
@@ -15,6 +15,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const navigate = useNavigate();
   const [progress, setProgress] = useState<AlbumProgress | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [showiOSInstall, setShowiOSInstall] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isRepeatedListOpen, setIsRepeatedListOpen] = useState(false);
 
@@ -41,11 +42,13 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   }, [userProfile]);
 
   useEffect(() => {
-    const checkStandalone = () => {
-      const standalone = (window.navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches;
-      setIsStandalone(!!standalone);
-    };
-    checkStandalone();
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const standalone = (window.navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches;
+    setIsStandalone(!!standalone);
+    
+    if (isIOS && !standalone) {
+      setShowiOSInstall(true);
+    }
     
     // Listen for the custom event from main.tsx
     const handler = () => setIsStandalone(false);
@@ -58,6 +61,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   };
 
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [allProgress, setAllProgress] = useState<AlbumProgress[]>([]);
+  const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
 
   useEffect(() => {
     if (userProfile) {
@@ -93,6 +98,47 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     return count;
   }, [normalizedMyStickers]);
 
+  const leaderboard = useMemo(() => {
+    if (allProgress.length === 0) return [];
+    
+    // Include current user in the comparison
+    const allStats = [
+      { 
+        userId: userProfile?.userId, 
+        progress, 
+        user: userProfile 
+      },
+      ...allProgress.map(p => ({ 
+        userId: p.userId, 
+        progress: p, 
+        user: allUsers[p.userId] 
+      }))
+    ].filter(item => item.user && item.user.status === 'approved');
+
+    const calculated = allStats.map(item => {
+      const s = item.progress?.stickers || {};
+      const counts: Record<string, number> = {};
+      Object.entries(s).forEach(([id, qty]) => {
+        const norm = normalizeStickerId(id);
+        counts[norm] = Math.max(counts[norm] || 0, qty);
+      });
+      const owned = Object.values(counts).filter(v => v >= 1).length;
+      const rate = Math.round((owned / totalPossible) * 100);
+      return {
+        userId: item.userId,
+        user: item.user,
+        rate,
+        updatedAt: item.progress?.updatedAt?.toDate?.() || new Date(0)
+      };
+    });
+
+    // Sort by rate (desc) then by updatedAt (asc) - tie breaker: who reached it first
+    return calculated.sort((a, b) => {
+      if (b.rate !== a.rate) return b.rate - a.rate;
+      return a.updatedAt.getTime() - b.updatedAt.getTime();
+    }).slice(0, 3);
+  }, [allProgress, allUsers, userProfile, progress, totalPossible]);
+
   const missingCount = totalPossible - ownedCount;
   const completionRate = Math.round((ownedCount / totalPossible) * 100);
 
@@ -118,9 +164,6 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
 
     return { emptyTeams, incompleteTeams };
   }, [normalizedMyStickers]);
-
-  const [allProgress, setAllProgress] = useState<AlbumProgress[]>([]);
-  const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
 
   useEffect(() => {
     if (!userProfile) return;
@@ -206,6 +249,88 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {showiOSInstall && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 rounded-full" />
+          <div className="flex items-center justify-between gap-4 relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                <Smartphone className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h4 className="text-white font-black italic uppercase tracking-tight">Instala en tu iPhone</h4>
+                <p className="text-white/80 text-xs font-medium">Lleva tu álbum siempre contigo como una App.</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => {
+                const modal = document.getElementById('ios-install-modal');
+                if (modal) modal.classList.remove('hidden');
+              }}
+              className="px-6 py-2 bg-white text-blue-600 font-extrabold text-[10px] uppercase tracking-widest rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all"
+            >
+              Cómo Instalar
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* iOS Installation Instructions Modal */}
+      <div id="ios-install-modal" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          whileInView={{ scale: 1, opacity: 1 }}
+          className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3rem] max-w-md w-full relative"
+        >
+          <button 
+            onClick={() => document.getElementById('ios-install-modal')?.classList.add('hidden')}
+            className="absolute top-6 right-6 w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+          >
+            <span className="text-2xl font-light">×</span>
+          </button>
+          
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-blue-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+              <Smartphone className="w-10 h-10 text-blue-500" />
+            </div>
+            <h3 className="text-2xl font-black text-white italic uppercase">Instalar en iOS</h3>
+            <p className="text-zinc-400 text-sm mt-2">Sigue estos pasos para instalar Stickers 2026 en tu iPhone.</p>
+          </div>
+
+          <div className="space-y-6 mb-8">
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">1</div>
+              <p className="text-zinc-200 text-sm leading-relaxed">
+                Toca el botón de <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Compartir <ShareIcon className="w-3 h-3"/></span> en la parte inferior del navegador.
+              </p>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">2</div>
+              <p className="text-zinc-200 text-sm leading-relaxed">
+                Desliza hacia arriba y selecciona <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Agregar a Inicio <Plus className="w-3 h-3"/></span>.
+              </p>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">3</div>
+              <p className="text-zinc-200 text-sm leading-relaxed">
+                Toca <span className="text-white font-bold mx-1">Agregar</span> en la esquina superior derecha.
+              </p>
+            </div>
+          </div>
+
+          <button 
+            onClick={() => document.getElementById('ios-install-modal')?.classList.add('hidden')}
+            className="w-full py-4 bg-zinc-800 text-white font-black uppercase tracking-widest text-xs rounded-2xl border border-zinc-700 hover:bg-zinc-700 transition-colors"
+          >
+            Entendido
+          </button>
+        </motion.div>
+      </div>
+
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden p-8 rounded-[2.5rem] bg-zinc-900 border border-zinc-800 shadow-2xl">
         <div className="absolute top-0 right-0 w-64 h-64 bg-worldcup-green/5 blur-[100px] -mr-32 -mt-32 rounded-full" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-worldcup-red/5 blur-[100px] -ml-32 -mb-32 rounded-full" />
@@ -297,6 +422,75 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           );
         })}
       </div>
+
+      {leaderboard.length > 0 && (
+        <section className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3rem] relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 blur-[120px] -mr-48 -mt-48 rounded-full" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-8 bg-amber-500 rounded-full" />
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Podio de Coleccionistas</h3>
+              </div>
+              <p className="text-[10px] bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20 font-black uppercase tracking-[0.2em]">Top Usuarios</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {leaderboard.map((item, idx) => (
+                <div 
+                  key={item.userId} 
+                  className={cn(
+                    "relative p-6 rounded-[2rem] border transition-all hover:scale-[1.02] duration-300",
+                    idx === 0 ? "bg-amber-500/10 border-amber-500/30 shadow-lg shadow-amber-500/10" :
+                    idx === 1 ? "bg-zinc-800/10 border-zinc-700/50 shadow-lg shadow-black/20" :
+                    "bg-zinc-800/10 border-zinc-800/50"
+                  )}
+                >
+                  <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-zinc-950 border-2 border-zinc-800 flex items-center justify-center font-black italic shadow-xl">
+                    <span className={cn(
+                      "text-lg",
+                      idx === 0 ? "text-amber-500" :
+                      idx === 1 ? "text-zinc-400" :
+                      "text-amber-700"
+                    )}>{idx + 1}°</span>
+                  </div>
+                  
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center shadow-lg">
+                      <Users className="w-8 h-8 text-white/20" />
+                    </div>
+                    <div>
+                      <p className="text-white font-black italic uppercase truncate max-w-[150px]">{item.user?.displayName}</p>
+                      <p className="text-3xl font-black text-worldcup-green italic">{item.rate}%</p>
+                    </div>
+                    <div className="space-y-2">
+                       <p className="text-[10px] text-zinc-500 font-bold leading-tight px-4">
+                        {idx === 0 ? "¡Liderando el camino a la gloria! Un verdadero historiador de la Copa Mundo." : 
+                         idx === 1 ? "¡Paso firme y decidido! Estás a nada de la cima, no te detengas." :
+                         "¡En el podio de honor! Demostrando que cada estampa cuenta."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 p-6 bg-black/40 rounded-[2rem] border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-sm text-zinc-400 font-medium text-center sm:text-left">
+                Cada estampa conseguida o intercambiada te acerca al salón de la fama. <br/>
+                <span className="text-zinc-500 text-xs">¡Sigue coleccionando y podrías ser tú quien lidere el próximo podio!</span>
+              </p>
+              <button 
+                onClick={() => navigate('/market')}
+                className="px-6 py-3 bg-worldcup-green text-black font-black uppercase tracking-widest text-[10px] rounded-full shadow-lg shadow-worldcup-green/20 hover:scale-105 active:scale-95 transition-all"
+              >
+                Buscar Intercambios
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <section className="bg-zinc-900 border border-zinc-800 p-10 rounded-[3rem] relative overflow-hidden group shadow-2xl">
