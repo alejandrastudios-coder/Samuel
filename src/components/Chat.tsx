@@ -16,6 +16,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
   const [messages, setMessages] = useState<Message[]>([]);
   const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
   const [text, setText] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [myProgress, setMyProgress] = useState<AlbumProgress | null>(null);
   const [peerProgress, setPeerProgress] = useState<AlbumProgress | null>(null);
   const [showTradeInfo, setShowTradeInfo] = useState(true);
@@ -110,25 +111,31 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
     
     if (!userProfile) return;
     
-    if (confirm('¿Estás seguro de que quieres eliminar este chat?')) {
-      try {
-        const chatRef = doc(db, 'chats', chatIdToDelete);
-        const chatDoc = chats.find(c => c.id === chatIdToDelete);
-        if (!chatDoc) return;
-        
-        const hiddenBy = chatDoc.hiddenBy || [];
-        if (!hiddenBy.includes(userProfile.userId)) {
-          await updateDoc(chatRef, {
-            hiddenBy: [...hiddenBy, userProfile.userId]
-          });
-        }
-        
-        if (chatId === chatIdToDelete) {
-          navigate('/chat');
-        }
-      } catch (error) {
-        console.error("Error deleting chat:", error);
+    if (deleteConfirmId !== chatIdToDelete) {
+      setDeleteConfirmId(chatIdToDelete);
+      // Auto-reset after 3 seconds
+      setTimeout(() => setDeleteConfirmId(prev => prev === chatIdToDelete ? null : prev), 3000);
+      return;
+    }
+
+    try {
+      const chatRef = doc(db, 'chats', chatIdToDelete);
+      const chatDoc = chats.find(c => c.id === chatIdToDelete);
+      if (!chatDoc) return;
+      
+      const hiddenBy = chatDoc.hiddenBy || [];
+      if (!hiddenBy.includes(userProfile.userId)) {
+        await updateDoc(chatRef, {
+          hiddenBy: [...hiddenBy, userProfile.userId]
+        });
       }
+      
+      setDeleteConfirmId(null);
+      if (chatId === chatIdToDelete) {
+        navigate('/chat');
+      }
+    } catch (error) {
+      console.error("Error deleting chat:", error);
     }
   };
 
@@ -210,10 +217,22 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                     <p className="text-xs text-zinc-500 truncate flex-1">{chat.lastMessage}</p>
                     <button 
                       onClick={(e) => deleteChat(e, chat.id)}
-                      className="p-1.5 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                      title="Eliminar chat"
+                      className={cn(
+                        "p-1.5 transition-all rounded-lg flex items-center gap-1",
+                        deleteConfirmId === chat.id 
+                          ? "bg-red-500 text-white animate-pulse px-2" 
+                          : "text-zinc-600 hover:text-red-500 hover:bg-red-500/10 md:opacity-0 group-hover:opacity-100"
+                      )}
+                      title={deleteConfirmId === chat.id ? "Confirmar eliminar" : "Eliminar chat"}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      {deleteConfirmId === chat.id ? (
+                        <>
+                          <Trash2 className="w-3 h-3" />
+                          <span className="text-[10px] font-bold">BORRAR</span>
+                        </>
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   </div>
                 </div>

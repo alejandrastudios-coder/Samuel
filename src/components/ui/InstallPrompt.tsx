@@ -120,17 +120,10 @@ export const InstallPrompt: React.FC = () => {
                     : 'Accede más rápido instalando la app en tu pantalla de inicio.'}
               </p>
               
-              {window.self !== window.top ? (
-                <button 
-                  onClick={() => window.open(window.location.href, '_blank')}
-                  className="mt-4 w-full py-2.5 bg-white text-black rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors"
-                >
-                  Abrir en pestaña nueva
-                </button>
-              ) : !isIOS ? (
+              {!isIOS ? (
                 <button 
                   onClick={handleInstallClick}
-                  className="mt-4 w-full py-2.5 bg-green-500 text-black rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-green-400 transition-colors"
+                  className="mt-4 w-full py-2.5 bg-white text-black rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors"
                 >
                   Instalar Ahora
                 </button>

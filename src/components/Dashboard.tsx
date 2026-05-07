@@ -61,13 +61,13 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const completionRate = Math.round((ownedCount / totalPossible) * 100);
 
   const [allProgress, setAllProgress] = useState<AlbumProgress[]>([]);
-  const [myProgress, setMyProgress] = useState<AlbumProgress | null>(null);
+  const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
 
   useEffect(() => {
     if (!userProfile) return;
 
     let unsubAll: (() => void) | undefined;
-    let unsubMe: (() => void) | undefined;
+    let unsubUsers: (() => void) | undefined;
 
     // Only fetch others' progress if approved or admin
     if (userProfile.status === 'approved' || userProfile.role === 'admin') {
@@ -80,42 +80,46 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           console.error("Error fetching all progress:", error);
         }
       );
-    }
 
-    // Always try to fetch my progress
-    unsubMe = onSnapshot(
-      doc(db, 'album_progress', userProfile.userId), 
-      (snap) => {
-        if (snap.exists()) setMyProgress(snap.data() as AlbumProgress);
-      },
-      (error) => {
-        console.error("Error fetching my progress:", error);
-      }
-    );
+      unsubUsers = onSnapshot(
+        collection(db, 'users'),
+        (snap) => {
+          const usersMap: Record<string, UserProfile> = {};
+          snap.docs.forEach(d => {
+            usersMap[d.id] = d.data() as UserProfile;
+          });
+          setAllUsers(usersMap);
+        },
+        (error) => console.error("Error fetching users:", error)
+      );
+    }
 
     return () => {
       unsubAll?.();
-      unsubMe?.();
+      unsubUsers?.();
     };
   }, [userProfile]);
 
   const matchesCount = useMemo(() => {
-    if (!myProgress || allProgress.length === 0) return 0;
+    if (!progress || allProgress.length === 0) return 0;
     
     let count = 0;
     allProgress.forEach(peer => {
+      const peerUser = allUsers[peer.userId];
+      if (!peerUser || peerUser.status !== 'approved') return;
+
       // Stickers the peer has repeated (more than 1)
       const peerRepeated = Object.entries(peer.stickers)
         .filter(([_, s]) => s > 1)
         .map(([id]) => id);
       
       // Stickers I have repeated (more than 1)
-      const myRepeated = Object.entries(myProgress.stickers)
+      const myRepeated = Object.entries(progress.stickers)
         .filter(([_, s]) => s > 1)
         .map(([id]) => id);
       
       // They can give me if they have it repeated AND I don't have it (0 or undefined)
-      const theyCanGiveMe = peerRepeated.some(id => (myProgress.stickers[id] || 0) === 0);
+      const theyCanGiveMe = peerRepeated.some(id => (progress.stickers[id] || 0) === 0);
       // I can give them if I have it repeated AND they don't have it (0 or undefined)
       const iCanGiveThem = myRepeated.some(id => (peer.stickers[id] || 0) === 0);
       
@@ -124,7 +128,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       }
     });
     return count;
-  }, [myProgress, allProgress]);
+  }, [progress, allProgress, allUsers]);
 
   const stats = [
     { name: 'Completado', value: `${completionRate}%`, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-500/10' },
@@ -159,15 +163,6 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 )}
                 Chat
               </button>
-              {!isStandalone && (
-                <button 
-                  onClick={triggerInstall}
-                  className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:scale-105 transition-transform"
-                >
-                  <Download className="w-4 h-4" />
-                  Instalar App
-                </button>
-              )}
             </div>
           </div>
           <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">
@@ -188,30 +183,6 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       </header>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {!isStandalone && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="col-span-2 lg:col-span-4 bg-gradient-to-br from-green-500 to-emerald-600 p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group shadow-2xl shadow-green-500/20"
-          >
-            <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-white/20 blur-3xl rounded-full" />
-            <div className="flex items-center gap-6 relative z-10">
-              <div className="w-16 h-16 rounded-3xl bg-white text-green-600 flex items-center justify-center flex-shrink-0 shadow-xl group-hover:rotate-12 transition-transform">
-                <Download className="w-8 h-8" />
-              </div>
-              <div className="text-left">
-                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Descargar en el Teléfono</h3>
-                <p className="text-white/80 font-medium">Instala la app para recibir notificaciones y entrar directo.</p>
-              </div>
-            </div>
-            <button 
-              onClick={triggerInstall}
-              className="w-full md:w-auto px-10 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl relative z-10"
-            >
-              Instalar Ahora
-            </button>
-          </motion.div>
-        )}
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           const isClickable = !!stat.action;
