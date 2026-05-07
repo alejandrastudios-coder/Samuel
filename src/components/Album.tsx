@@ -146,6 +146,11 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
             const id = `${group.id}-${i + 1}`;
             return (progress?.stickers[id] || 0) >= 1;
           }).length;
+
+          const hasRepeated = Array.from({ length: group.count }).some((_, i) => {
+            const id = `${group.id}-${i + 1}`;
+            return (progress?.stickers[id] || 0) > 1;
+          });
           
           const isCompleted = ownedInGroup === group.count;
 
@@ -169,15 +174,29 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                 aria-expanded={isExpanded}
               >
                 <div className="flex items-center gap-4">
-                  {group.type === 'team' ? (
-                    <img src={group.flag} alt={group.name} className="w-8 h-6 object-cover rounded-sm shadow-sm" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-lg bg-green-600/20 flex items-center justify-center">
-                       {group.id === 'UFW' ? <Trophy className="w-4 h-4 text-green-500" /> : <Star className="w-4 h-4 text-green-500" />}
-                    </div>
-                  )}
+                  <div className="relative">
+                    {group.type === 'team' ? (
+                      <img src={group.flag} alt={group.name} className="w-8 h-6 object-cover rounded-sm shadow-sm" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-lg bg-green-600/20 flex items-center justify-center">
+                         {group.id === 'UFW' ? <Trophy className="w-4 h-4 text-green-500" /> : <Star className="w-4 h-4 text-green-500" />}
+                      </div>
+                    )}
+                    {hasRepeated && (
+                      <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-amber-500 rounded-full border-2 border-zinc-900 flex items-center justify-center shadow-lg">
+                        <Repeat className="w-2 h-2 text-black" strokeWidth={4} />
+                      </div>
+                    )}
+                  </div>
                   <div className="text-left">
-                    <h4 className="text-white font-bold">{group.name}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-white font-bold">{group.name}</h4>
+                      {hasRepeated && (
+                        <span className="text-[8px] font-black bg-amber-500/10 text-amber-500 px-1 rounded ring-1 ring-amber-500/20 uppercase tracking-tighter">
+                          +Rep
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[10px] text-zinc-500 uppercase tracking-tighter font-bold">
                       {ownedInGroup}/{group.count} ESTAMPAS
                     </p>
