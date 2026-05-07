@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { collection, query, onSnapshot, doc, orderBy, addDoc, serverTimestamp, updateDoc, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, orderBy, addDoc, serverTimestamp, updateDoc, where, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, Chat as ChatType, Message, AlbumProgress } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -88,22 +88,54 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || !chatId || !userProfile) return;
+    if (!text.trim() || !chatId || !userProfile || !peerId) return;
 
     const msgText = text;
     setText('');
 
-    await addDoc(collection(db, 'chats', chatId, 'messages'), {
-      senderId: userProfile.userId,
-      text: msgText,
-      createdAt: serverTimestamp()
-    });
+    try {
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+        senderId: userProfile.userId,
+        text: msgText,
+        createdAt: serverTimestamp()
+      });
 
-    await updateDoc(doc(db, 'chats', chatId), {
-      lastMessage: msgText,
-      updatedAt: serverTimestamp()
-    });
+      const chatRef = doc(db, 'chats', chatId);
+      const chatSnap = await getDoc(chatRef);
+      const chatData = chatSnap.data() as ChatType;
+      const unreadCounts = chatData.unreadCounts || {};
+      
+      await updateDoc(chatRef, {
+        lastMessage: msgText,
+        updatedAt: serverTimestamp(),
+        [`unreadCounts.${peerId}`]: (unreadCounts[peerId] || 0) + 1,
+        // Reset my count just in case called while sending
+        [`unreadCounts.${userProfile.userId}`]: 0
+      });
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
   };
+
+  const activeChat = chats.find(c => c.id === chatId);
+  const peerId = activeChat?.participants.find(p => p !== userProfile?.userId);
+  const peerUser = peerId ? allUsers[peerId] : null;
+
+  // Reset unread count when chat is opened
+  useEffect(() => {
+    if (!chatId || !userProfile || !activeChat) return;
+    
+    const resetUnread = async () => {
+      const counts = activeChat.unreadCounts || {};
+      if ((counts[userProfile.userId] || 0) > 0) {
+        await updateDoc(doc(db, 'chats', chatId), {
+          [`unreadCounts.${userProfile.userId}`]: 0
+        });
+      }
+    };
+    
+    resetUnread();
+  }, [chatId, userProfile, activeChat?.unreadCounts?.[userProfile?.userId || '']]);
 
   const deleteChat = async (e: React.MouseEvent, chatIdToDelete: string) => {
     e.preventDefault();
@@ -138,10 +170,6 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
       console.error("Error deleting chat:", error);
     }
   };
-
-  const activeChat = chats.find(c => c.id === chatId);
-  const peerId = activeChat?.participants.find(p => p !== userProfile?.userId);
-  const peerUser = peerId ? allUsers[peerId] : null;
 
   useEffect(() => {
     if (!peerId) return;
@@ -209,9 +237,16 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1">
                     <h4 className="text-sm font-bold text-white truncate">{user?.displayName || 'Usuario'}</h4>
-                    <span className="text-[10px] text-zinc-500">
-                      {chat.updatedAt ? format(chat.updatedAt.toDate(), 'HH:mm') : ''}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-[10px] text-zinc-500">
+                        {chat.updatedAt ? format(chat.updatedAt.toDate(), 'HH:mm') : ''}
+                      </span>
+                      {chat.unreadCounts?.[userProfile?.userId || ''] > 0 && (
+                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center text-[10px] font-black text-black">
+                           {chat.unreadCounts[userProfile!.userId]}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-between items-center gap-2">
                     <p className="text-xs text-zinc-500 truncate flex-1">{chat.lastMessage}</p>

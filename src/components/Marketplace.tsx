@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, onSnapshot, doc, getDoc, setDoc, addDoc, serverTimestamp, where, getDocs, or } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, getDoc, setDoc, addDoc, serverTimestamp, where, getDocs, or, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { UserProfile, AlbumProgress, Chat } from '../types';
 import { TEAMS } from '../constants';
@@ -96,26 +96,44 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
     const participants = [userProfile.userId, peerUserId].sort();
     const chatId = participants.join('_');
     
-    const chatRef = doc(db, 'chats', chatId);
-    const chatSnap = await getDoc(chatRef);
-    
-    if (!chatSnap.exists()) {
-      const initialMessage = '¡Hola! He visto tus repetidas en el Market y me interesan.';
-      await setDoc(chatRef, {
-        participants,
-        lastMessage: initialMessage,
-        updatedAt: serverTimestamp()
-      });
+    try {
+      const chatRef = doc(db, 'chats', chatId);
+      const chatSnap = await getDoc(chatRef);
       
-      // Also add the actual message to the subcollection
-      await addDoc(collection(db, 'chats', chatId, 'messages'), {
-        senderId: userProfile.userId,
-        text: initialMessage,
-        createdAt: serverTimestamp()
-      });
+      if (!chatSnap.exists()) {
+        const initialMessage = '¡Hola! He visto tus repetidas en el Market y me interesan.';
+        await setDoc(chatRef, {
+          participants,
+          lastMessage: initialMessage,
+          updatedAt: serverTimestamp(),
+          hiddenBy: [],
+          unreadCounts: {
+            [peerUserId]: 1,
+            [userProfile.userId]: 0
+          }
+        });
+        
+        await addDoc(collection(db, 'chats', chatId, 'messages'), {
+          senderId: userProfile.userId,
+          text: initialMessage,
+          createdAt: serverTimestamp()
+        });
+      } else {
+        // If it exists, make sure it's not hidden for me
+        const data = chatSnap.data() as Chat;
+        const hiddenBy = data.hiddenBy || [];
+        if (hiddenBy.includes(userProfile.userId)) {
+          await updateDoc(chatRef, {
+            hiddenBy: hiddenBy.filter(id => id !== userProfile.userId)
+          });
+        }
+      }
+      
+      navigate(`/chat/${chatId}`);
+    } catch (error) {
+      console.error("Error starting chat:", error);
+      alert("Error al iniciar el chat. Por favor intenta de nuevo.");
     }
-    
-    navigate(`/chat/${chatId}`);
   };
 
   return (

@@ -7,7 +7,7 @@ export const TEAMS = [
   "Argentina", "Algeria", "Austria", "Jordan", "England", "Croatia", "Ghana", "Panamá"
 ];
 
-export const UFW_COUNT = 19;
+export const FWC_COUNT = 19;
 export const COCA_COLA_COUNT = 12;
 export const STICKERS_PER_TEAM = 20;
 

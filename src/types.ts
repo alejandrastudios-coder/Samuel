@@ -27,6 +27,7 @@ export interface Chat {
   lastMessage: string;
   updatedAt: any;
   hiddenBy?: string[];
+  unreadCounts?: Record<string, number>;
 }
 
 export interface Message {

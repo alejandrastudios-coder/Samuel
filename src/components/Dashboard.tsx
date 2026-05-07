@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress } from '../types';
-import { TEAMS, STICKERS_PER_TEAM, UFW_COUNT, COCA_COLA_COUNT } from '../constants';
+import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT } from '../constants';
 import { motion } from 'motion/react';
 import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RepeatedList } from './RepeatedList';
+import { query, where } from 'firebase/firestore';
 
 export default function Dashboard({ userProfile }: { userProfile: UserProfile | null }) {
   const navigate = useNavigate();
@@ -18,10 +19,26 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const [isRepeatedListOpen, setIsRepeatedListOpen] = useState(false);
 
   useEffect(() => {
-    const handleUnread = (e: any) => setUnreadCount(e.detail);
-    window.addEventListener('unread-total-changed', handleUnread);
-    return () => window.removeEventListener('unread-total-changed', handleUnread);
-  }, []);
+    if (!userProfile) return;
+
+    // Listen to real-time unread counts from chats
+    const q = query(
+      collection(db, 'chats'),
+      where('participants', 'array-contains', userProfile.userId)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      let total = 0;
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        const counts = data.unreadCounts || {};
+        total += (counts[userProfile.userId] || 0);
+      });
+      setUnreadCount(total);
+    });
+
+    return () => unsub();
+  }, [userProfile]);
 
   useEffect(() => {
     const checkStandalone = () => {
@@ -53,7 +70,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     }
   }, [userProfile]);
 
-  const totalPossible = (TEAMS.length * STICKERS_PER_TEAM) + UFW_COUNT + COCA_COLA_COUNT;
+  const totalPossible = (TEAMS.length * STICKERS_PER_TEAM) + FWC_COUNT + COCA_COLA_COUNT;
   const stickers = progress?.stickers || {};
   const ownedCount = Object.values(stickers).filter(s => s >= 1).length;
   const repeatedCount = Object.values(stickers).reduce((acc, s) => acc + (s > 1 ? s - 1 : 0), 0);

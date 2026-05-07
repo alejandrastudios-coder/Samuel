@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, setDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -90,10 +90,14 @@ export default function AdminPanel() {
 
   const deleteUser = async (userId: string) => {
     try {
+      // 1. Delete progress
+      await deleteDoc(doc(db, 'album_progress', userId));
+      // 2. Delete user
       await deleteDoc(doc(db, 'users', userId));
       setConfirmDelete(null);
     } catch (error) {
       console.error('Error deleting user:', error);
+      alert('Error al eliminar el usuario y sus datos.');
     }
   };
 
@@ -115,6 +119,31 @@ export default function AdminPanel() {
     u.username.toLowerCase().includes(search.toLowerCase())
   );
 
+  const [isCleaning, setIsCleaning] = useState(false);
+
+  const cleanupOrphans = async () => {
+    if (!confirm('Esto borrará todos los datos de progreso de usuarios que ya no existen en el sistema. ¿Continuar?')) return;
+    setIsCleaning(true);
+    try {
+      const progressSnap = await getDocs(collection(db, 'album_progress'));
+      const activeUserIds = new Set(users.map(u => u.userId));
+      
+      let count = 0;
+      for (const d of progressSnap.docs) {
+        if (!activeUserIds.has(d.id)) {
+          await deleteDoc(doc(db, 'album_progress', d.id));
+          count++;
+        }
+      }
+      alert(`Limpieza completada. Se eliminaron ${count} registros huérfanos.`);
+    } catch (error) {
+      console.error(error);
+      alert('Error durante la limpieza');
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2">
@@ -131,6 +160,14 @@ export default function AdminPanel() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={cleanupOrphans}
+            disabled={isCleaning}
+            className="flex items-center gap-2 px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-2xl text-sm font-black transition-all shadow-lg active:scale-95 disabled:opacity-50"
+          >
+            <Shield className="w-5 h-5 text-purple-500" />
+            <span className="hidden sm:inline">{isCleaning ? 'LIMPIANDO...' : 'LIMPIAR HUÉRFANOS'}</span>
+          </button>
           <button 
             onClick={() => { resetForm(); setIsModalOpen(true); }}
             className="flex items-center gap-2 px-5 py-3 bg-green-600 hover:bg-green-500 text-white rounded-2xl text-sm font-black transition-all shadow-lg active:scale-95"

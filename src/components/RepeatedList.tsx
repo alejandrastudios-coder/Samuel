@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Repeat, ChevronRight } from 'lucide-react';
-import { TEAMS, FLAGS, STICKERS_PER_TEAM, UFW_COUNT, COCA_COLA_COUNT } from '../constants';
+import { TEAMS, FLAGS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT } from '../constants';
 import { cn } from '../lib/utils';
 
 interface RepeatedListProps {
@@ -32,16 +32,16 @@ export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
       }
     });
 
-    // Special: UFW
-    const ufw: { id: string; num: number; count: number }[] = [];
-    for (let i = 1; i <= UFW_COUNT; i++) {
+    // Special: FWC
+    const fwc: { id: string; num: number; count: number }[] = [];
+    for (let i = 1; i <= FWC_COUNT; i++) {
       const id = `UFW-${i}`;
       const count = stickers[id] || 0;
       if (count > 1) {
-        ufw.push({ id, num: i, count: count - 1 });
+        fwc.push({ id, num: i, count: count - 1 });
       }
     }
-    if (ufw.length > 0) result.push({ team: 'UFW', stickers: ufw });
+    if (fwc.length > 0) result.push({ team: 'FWC', stickers: fwc });
 
     // Special: Coca-Cola
     const cocacola: { id: string; num: number; count: number }[] = [];
