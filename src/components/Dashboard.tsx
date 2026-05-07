@@ -44,7 +44,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const totalPossible = (TEAMS.length * STICKERS_PER_TEAM) + PRIZES_COUNT + COCA_COLA_COUNT;
   const stickers = progress?.stickers || {};
   const ownedCount = Object.values(stickers).filter(s => s >= 1).length;
-  const repeatedCount = Object.values(stickers).filter(s => s === 2).length;
+  const repeatedCount = Object.values(stickers).reduce((acc, s) => acc + (s > 1 ? s - 1 : 0), 0);
   const missingCount = totalPossible - ownedCount;
   const completionRate = Math.round((ownedCount / totalPossible) * 100);
 
@@ -92,14 +92,14 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     
     let count = 0;
     allProgress.forEach(peer => {
-      // Stickers the peer has repeated
+      // Stickers the peer has repeated (more than 1)
       const peerRepeated = Object.entries(peer.stickers)
-        .filter(([_, s]) => s === 2)
+        .filter(([_, s]) => s > 1)
         .map(([id]) => id);
       
-      // Stickers I have repeated
+      // Stickers I have repeated (more than 1)
       const myRepeated = Object.entries(myProgress.stickers)
-        .filter(([_, s]) => s === 2)
+        .filter(([_, s]) => s > 1)
         .map(([id]) => id);
       
       // They can give me if they have it repeated AND I don't have it (0 or undefined)

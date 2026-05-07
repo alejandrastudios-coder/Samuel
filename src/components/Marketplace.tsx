@@ -69,8 +69,8 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
     const peerUser = allUsers[p.userId];
     if (!peerUser || peerUser.status !== 'approved') return null;
 
-    const peerRepeated = Object.entries(p.stickers).filter(([_, s]) => s === 2).map(([id]) => id);
-    const myRepeated = Object.entries(myProgress?.stickers || {}).filter(([_, s]) => s === 2).map(([id]) => id);
+    const peerRepeated = Object.entries(p.stickers).filter(([_, s]) => s > 1).map(([id]) => id);
+    const myRepeated = Object.entries(myProgress?.stickers || {}).filter(([_, s]) => s > 1).map(([id]) => id);
 
     const theyCanGiveMe = peerRepeated.filter(id => (myProgress?.stickers[id] || 0) === 0);
     const iCanGiveThem = myRepeated.filter(id => (p.stickers[id] || 0) === 0);

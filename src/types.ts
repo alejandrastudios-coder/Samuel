@@ -13,7 +13,7 @@ export interface UserProfile {
   createdAt: any;
 }
 
-export type StickerStatus = 0 | 1 | 2; // 0: missing, 1: owned, 2: repeated
+export type StickerStatus = number; // 0: missing, 1: owned, 2+: count of stickers
 
 export interface AlbumProgress {
   userId: string;

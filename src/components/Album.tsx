@@ -40,7 +40,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
       const matches = querySnap.docs
         .map(d => d.data() as AlbumProgress)
-        .filter(p => p.userId !== userProfile?.userId && p.stickers[stickerId] === 2)
+        .filter(p => p.userId !== userProfile?.userId && p.stickers[stickerId] > 1)
         .map(p => ({ user: usersMap[p.userId], stickerId }))
         .filter(m => m.user && m.user.status === 'approved');
 
@@ -94,14 +94,17 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
     g.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggleSticker = async (stickerId: string) => {
+  const toggleSticker = async (stickerId: string, decrement: boolean = false) => {
     if (!userProfile) return;
-    const currentStatus = progress?.stickers[stickerId] || 0;
-    const nextStatus: StickerStatus = ((currentStatus + 1) % 3) as StickerStatus;
+    const currentCount = progress?.stickers[stickerId] || 0;
+    let nextCount = decrement ? Math.max(0, currentCount - 1) : currentCount + 1;
+    
+    // If it was repeated (2+) and we decrement, we can go back to 1. 
+    // If it was 0 and we decrement, it stays 0.
     
     try {
       await updateDoc(doc(db, 'album_progress', userProfile.userId), {
-        [`stickers.${stickerId}`]: nextStatus,
+        [`stickers.${stickerId}`]: nextCount,
         updatedAt: serverTimestamp()
       });
     } catch (error) {
@@ -121,7 +124,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
           </button>
           <div>
             <h2 className="text-2xl font-bold text-white">Mi Colección</h2>
-            <p className="text-sm text-zinc-500">Toca para cambiar estado: Faltante → Obtenida → Repetida</p>
+            <p className="text-sm text-zinc-500">Toca para añadir. Click derecho o botones para reducir.</p>
           </div>
         </div>
         <div className="relative flex-1 md:w-72">
@@ -205,26 +208,37 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                     <div className="p-4 grid grid-cols-5 gap-2 border-t border-zinc-800/30">
                       {Array.from({ length: group.count }).map((_, i) => {
                         const stickerId = `${group.id}-${i + 1}`;
-                        const status = progress?.stickers[stickerId] || 0;
+                        const count = progress?.stickers[stickerId] || 0;
                         return (
                           <div key={stickerId} className="relative group/sticker">
                             <button
                               onClick={() => toggleSticker(stickerId)}
+                              onContextMenu={(e) => { e.preventDefault(); toggleSticker(stickerId, true); }}
                               className={cn(
                                 "w-full aspect-square rounded-lg text-[10px] font-black flex items-center justify-center transition-all relative border",
-                                status === 0 && "bg-zinc-900 border-zinc-800 text-zinc-700 hover:border-zinc-600",
-                                status === 1 && "bg-green-600 border-green-500 text-white shadow-[0_0_10px_rgba(22,163,74,0.3)]",
-                                status === 2 && "bg-amber-500 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                                count === 0 && "bg-zinc-900 border-zinc-800 text-zinc-700 hover:border-zinc-600",
+                                count === 1 && "bg-green-600 border-green-500 text-white shadow-[0_0_10px_rgba(22,163,74,0.3)]",
+                                count >= 2 && "bg-amber-500 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.3)]"
                               )}
                             >
                               {i + 1}
-                              {status === 2 && (
-                                <div className="absolute -top-1 -right-1 bg-black text-amber-500 rounded-full p-0.5 border border-amber-500/50 scale-75">
-                                   <Repeat className="w-2.5 h-2.5" />
+                              {count >= 2 && (
+                                <div className="absolute -top-1 -right-1 bg-black text-amber-500 rounded-full px-1 py-0.5 border border-amber-500/50 scale-75 font-bold flex items-center gap-0.5">
+                                   <Repeat className="w-2 h-2" />
+                                   <span className="text-[8px]">x{count - 1}</span>
                                 </div>
                               )}
                             </button>
-                            {status === 0 && (
+                            {count > 0 && (
+                               <button 
+                                 onClick={(e) => { e.stopPropagation(); toggleSticker(stickerId, true); }}
+                                 className="absolute -bottom-1 -left-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover/sticker:opacity-100 transition-opacity hover:bg-red-600 z-10"
+                                 title="Quitar una"
+                               >
+                                 <span className="text-xs font-bold">-</span>
+                               </button>
+                            )}
+                            {count === 0 && (
                               <button 
                                 onClick={(e) => { e.stopPropagation(); findWhoHasIt(stickerId); }}
                                 className="absolute -top-1 -right-1 bg-zinc-800 text-zinc-400 rounded-full p-1 border border-zinc-700 opacity-0 group-hover/sticker:opacity-100 transition-opacity hover:text-green-500"
