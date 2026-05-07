@@ -40,7 +40,10 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
       usersSnap.docs.forEach(d => usersMap[d.id] = d.data() as UserProfile);
 
       const matches = querySnap.docs
-        .map(d => d.data() as AlbumProgress)
+        .map(d => ({
+          userId: d.id,
+          ...d.data()
+        } as AlbumProgress))
         .filter(p => p.userId !== userProfile?.userId && p.stickers[stickerId] > 1)
         .map(p => ({ user: usersMap[p.userId], stickerId }))
         .filter(m => m.user && m.user.status === 'approved');
@@ -399,10 +402,12 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                         </div>
                         <button 
                           onClick={async () => {
-                            if (!userProfile) return;
-                            const participants = [userProfile.userId, match.user.userId].sort();
-                            const chatId = participants.join('_');
-                            
+                          if (!userProfile) return;
+                          const peerUserId = match.user.userId;
+                          const participants = [userProfile.userId, peerUserId].sort();
+                          const chatId = participants.join('_');
+                          
+                          try {
                             const chatRef = doc(db, 'chats', chatId);
                             const chatSnap = await getDoc(chatRef);
                             
@@ -411,7 +416,12 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                               await setDoc(chatRef, {
                                 participants,
                                 lastMessage: initialMessage,
-                                updatedAt: serverTimestamp()
+                                updatedAt: serverTimestamp(),
+                                hiddenBy: [],
+                                unreadCounts: {
+                                  [peerUserId]: 1,
+                                  [userProfile.userId]: 0
+                                }
                               });
                               
                               await addDoc(collection(db, 'chats', chatId, 'messages'), {
@@ -419,10 +429,22 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                                 text: initialMessage,
                                 createdAt: serverTimestamp()
                               });
+                            } else {
+                              const data = chatSnap.data() as any;
+                              const hiddenBy = data.hiddenBy || [];
+                              if (hiddenBy.includes(userProfile.userId)) {
+                                await updateDoc(chatRef, {
+                                  hiddenBy: hiddenBy.filter((id: string) => id !== userProfile.userId)
+                                });
+                              }
                             }
                             
                             navigate(`/chat/${chatId}`);
-                          }}
+                          } catch (error) {
+                            console.error("Error starting chat from album:", error);
+                            alert("Error al iniciar el chat.");
+                          }
+                        }}
                           className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 active:scale-95"
                         >
                           <MessageSquare className="w-4 h-4" />

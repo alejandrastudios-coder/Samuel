@@ -91,7 +91,11 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       unsubAll = onSnapshot(
         collection(db, 'album_progress'), 
         (snap) => {
-          setAllProgress(snap.docs.map(d => d.data() as AlbumProgress).filter(p => p.userId !== userProfile.userId));
+          const data = snap.docs.map(d => ({
+            userId: d.id,
+            ...d.data()
+          } as AlbumProgress));
+          setAllProgress(data.filter(p => p.userId !== userProfile.userId));
         },
         (error) => {
           console.error("Error fetching all progress:", error);

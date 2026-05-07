@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, setDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, setDoc, serverTimestamp, getDocs, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -92,7 +92,13 @@ export default function AdminPanel() {
     try {
       // 1. Delete progress
       await deleteDoc(doc(db, 'album_progress', userId));
-      // 2. Delete user
+      // 2. Delete chats
+      const q = query(collection(db, 'chats'), where('participants', 'array-contains', userId));
+      const chatSnap = await getDocs(q);
+      for (const d of chatSnap.docs) {
+        await deleteDoc(d.ref);
+      }
+      // 3. Delete user
       await deleteDoc(doc(db, 'users', userId));
       setConfirmDelete(null);
     } catch (error) {

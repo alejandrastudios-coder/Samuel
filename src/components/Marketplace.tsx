@@ -25,7 +25,10 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
       unsubProgress = onSnapshot(
         collection(db, 'album_progress'), 
         (snap) => {
-          const data = snap.docs.map(d => d.data() as AlbumProgress);
+          const data = snap.docs.map(d => ({
+            userId: d.id, // Ensure we use the document ID as userId
+            ...d.data()
+          } as AlbumProgress));
           setAllProgress(data.filter(p => p.userId !== userProfile.userId));
         },
         (error) => console.error("Error fetching progress:", error)
@@ -79,7 +82,8 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
 
     const getLabel = (id: string) => {
       const [teamName, num] = id.split('-');
-      return `${teamName} ${num}`;
+      const label = teamName === 'UFW' ? 'FWC' : teamName;
+      return `${label} ${num}`;
     };
 
     return {
