@@ -381,7 +381,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       <RepeatedList 
         isOpen={isRepeatedListOpen} 
         onClose={() => setIsRepeatedListOpen(false)} 
-        stickers={stickers} 
+        stickers={normalizedMyStickers} 
       />
     </div>
   );

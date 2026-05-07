@@ -329,7 +329,7 @@ export default function App() {
                       <Route path="/chat" element={<Chat userProfile={userProfile} />} />
                       <Route path="/chat/:chatId" element={<Chat userProfile={userProfile} />} />
                       {userProfile?.role === 'admin' && (
-                        <Route path="/admin" element={<AdminPanel />} />
+                        <Route path="/admin" element={<AdminPanel userProfile={userProfile} />} />
                       )}
                       <Route path="*" element={<Navigate to="/" />} />
                    </Routes>

@@ -129,7 +129,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
       if (filter === 'complete') return ownedCount === group.count;
       if (filter === 'empty') return ownedCount === 0;
-      if (filter === 'incomplete') return ownedCount > 0 && ownedCount < group.count;
+      if (filter === 'incomplete') return ownedCount < group.count;
 
       return true;
     });
@@ -206,17 +206,14 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredGroups.map((group, idx) => {
-          const groupIndex = groups.findIndex(g => g.id === group.id);
           const ownedInGroup = Array.from({ length: group.count }).filter((_, i) => {
-            const idByName = `${group.id}-${i + 1}`;
-            const idByIndex = `team-${groupIndex}-${i + 1}`;
-            return (progress?.stickers[idByName] || progress?.stickers[idByIndex] || 0) >= 1;
+            const id = `${group.id}-${i + 1}`;
+            return (normalizedMyStickers[id] || 0) >= 1;
           }).length;
 
           const hasRepeated = Array.from({ length: group.count }).some((_, i) => {
-            const idByName = `${group.id}-${i + 1}`;
-            const idByIndex = `team-${groupIndex}-${i + 1}`;
-            return (progress?.stickers[idByName] || progress?.stickers[idByIndex] || 0) > 1;
+            const id = `${group.id}-${i + 1}`;
+            return (normalizedMyStickers[id] || 0) > 1;
           });
           
           const isCompleted = ownedInGroup === group.count;
@@ -264,9 +261,21 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-tighter font-bold">
-                      {ownedInGroup}/{group.count} ESTAMPAS
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-tighter font-bold">
+                        {ownedInGroup}/{group.count} ESTAMPAS
+                      </p>
+                      <span className={cn(
+                        "text-[9px] font-black uppercase tracking-tighter px-1 rounded",
+                        ownedInGroup === 0 ? "bg-zinc-800 text-zinc-500" :
+                        ownedInGroup === group.count ? "bg-green-500/10 text-green-500" :
+                        "bg-blue-500/10 text-blue-500"
+                      )}>
+                        {ownedInGroup === 0 ? 'Vacío' :
+                         ownedInGroup === group.count ? 'Completo' :
+                         'Incompleto'}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -294,18 +303,13 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                   >
                     <div className="p-4 grid grid-cols-5 gap-2 border-t border-zinc-800/30">
                       {Array.from({ length: group.count }).map((_, i) => {
-                        const idByName = `${group.id}-${i + 1}`;
-                        const idByIndex = group.type === 'team' ? `team-${groupIndex}-${i + 1}` : idByName;
+                        const id = `${group.id}-${i + 1}`;
+                        const count = normalizedMyStickers[id] || 0;
                         
-                        const hasName = progress?.stickers[idByName] !== undefined && progress?.stickers[idByName] > 0;
-                        const hasIndex = progress?.stickers[idByIndex] !== undefined && progress?.stickers[idByIndex] > 0;
-                        
-                        const count = (progress?.stickers[idByName] || progress?.stickers[idByIndex] || 0);
-                        const stickerId = hasIndex && !hasName ? idByIndex : idByName;
                         return (
-                          <div key={stickerId} className="relative group/sticker">
+                          <div key={id} className="relative group/sticker">
                             <button
-                              onClick={() => setSelectedSticker({ id: stickerId, num: i + 1, group })}
+                              onClick={() => setSelectedSticker({ id, num: i + 1, group })}
                               className={cn(
                                 "w-full aspect-square rounded-xl text-[10px] font-black flex items-center justify-center transition-all relative border-2 active:scale-90",
                                 count === 0 && "bg-zinc-900 border-zinc-800 text-zinc-700 hover:border-zinc-700",
@@ -322,7 +326,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                             </button>
                             {count === 0 && (
                               <button 
-                                onClick={(e) => { e.stopPropagation(); findWhoHasIt(stickerId); }}
+                                onClick={(e) => { e.stopPropagation(); findWhoHasIt(id); }}
                                 className="absolute -top-1 -right-1 bg-zinc-800 text-zinc-400 rounded-full p-1 border border-zinc-700 opacity-0 group-hover/sticker:opacity-100 transition-opacity hover:text-green-500"
                                 title="¿Quién la tiene?"
                               >
@@ -363,8 +367,8 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
               <div className="flex items-center gap-4 mb-8">
                 <div className={cn(
                   "w-20 h-20 rounded-[2rem] flex items-center justify-center text-3xl font-black italic shadow-2xl border-4",
-                  (progress?.stickers[selectedSticker.id] || 0) === 0 ? "bg-zinc-900 border-zinc-800 text-zinc-700" :
-                  (progress?.stickers[selectedSticker.id] || 0) === 1 ? "bg-green-600 border-green-500 text-white" :
+                  (normalizedMyStickers[selectedSticker.id] || 0) === 0 ? "bg-zinc-900 border-zinc-800 text-zinc-700" :
+                  (normalizedMyStickers[selectedSticker.id] || 0) === 1 ? "bg-green-600 border-green-500 text-white" :
                   "bg-amber-500 border-amber-400 text-white"
                 )}>
                   {selectedSticker.num}
@@ -374,7 +378,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                     {selectedSticker.group.name} #{selectedSticker.num}
                   </h4>
                   <p className="text-sm text-zinc-500 font-bold uppercase tracking-widest mt-1">
-                    Tienes {(progress?.stickers[selectedSticker.id] || 0)} {(progress?.stickers[selectedSticker.id] || 0) === 1 ? 'copia' : 'copias'}
+                    Tienes {(normalizedMyStickers[selectedSticker.id] || 0)} {(normalizedMyStickers[selectedSticker.id] || 0) === 1 ? 'copia' : 'copias'}
                   </p>
                 </div>
               </div>
@@ -382,7 +386,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleSticker(selectedSticker.id, true); }}
-                  disabled={(progress?.stickers[selectedSticker.id] || 0) === 0}
+                  disabled={(normalizedMyStickers[selectedSticker.id] || 0) === 0}
                   className="flex items-center justify-center gap-3 py-6 bg-zinc-900 border border-zinc-800 rounded-[2rem] text-white font-black text-lg transition-all active:scale-95 disabled:opacity-20 disabled:active:scale-100"
                 >
                   <span className="text-3xl">-</span>

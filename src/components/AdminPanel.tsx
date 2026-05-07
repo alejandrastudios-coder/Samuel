@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-export default function AdminPanel() {
+export default function AdminPanel({ userProfile }: { userProfile: UserProfile | null }) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,6 +29,10 @@ export default function AdminPanel() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (userProfile?.role !== 'admin') {
+      navigate('/');
+      return;
+    }
     const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, (snap) => {
       setUsers(snap.docs.map(d => ({ ...d.data() } as UserProfile)));

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Repeat, ChevronRight } from 'lucide-react';
-import { TEAMS, FLAGS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT } from '../constants';
+import { TEAMS, FLAGS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId } from '../constants';
 import { cn } from '../lib/utils';
 
 interface RepeatedListProps {
@@ -11,22 +11,26 @@ interface RepeatedListProps {
 }
 
 export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
-  const repeatedByTeam = React.useMemo(() => {
+  const repeatedByTeam = useMemo(() => {
     const result: { team: string; stickers: { id: string; num: number; count: number }[] }[] = [];
 
+    // Aggregate counts first
+    const counts: Record<string, number> = {};
+    Object.entries(stickers).forEach(([id, s]) => {
+      const norm = normalizeStickerId(id);
+      counts[norm] = (counts[norm] || 0) + s;
+    });
+
     // Group by standard teams
-    TEAMS.forEach((teamName, index) => {
+    TEAMS.forEach((teamName) => {
       const teamRepeated: { id: string; num: number; count: number }[] = [];
       
       for (let i = 1; i <= STICKERS_PER_TEAM; i++) {
-        // Support both Argentina-1 and team-0-1 formats
-        const idByName = `${teamName}-${i}`;
-        const idByIndex = `team-${index}-${i}`;
-        
-        const count = (stickers[idByName] || stickers[idByIndex] || 0);
+        const id = `${teamName}-${i}`;
+        const count = counts[id] || 0;
         if (count > 1) {
           teamRepeated.push({ 
-            id: stickers[idByName] ? idByName : idByIndex, 
+            id, 
             num: i, 
             count: count - 1 
           });
@@ -42,7 +46,7 @@ export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
     const fwc: { id: string; num: number; count: number }[] = [];
     for (let i = 1; i <= FWC_COUNT; i++) {
       const id = `UFW-${i}`;
-      const count = stickers[id] || 0;
+      const count = counts[id] || 0;
       if (count > 1) {
         fwc.push({ id, num: i, count: count - 1 });
       }
@@ -53,7 +57,7 @@ export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
     const cocacola: { id: string; num: number; count: number }[] = [];
     for (let i = 1; i <= COCA_COLA_COUNT; i++) {
       const id = `extra-${i}`;
-      const count = stickers[id] || 0;
+      const count = counts[id] || 0;
       if (count > 1) {
         cocacola.push({ id, num: i, count: count - 1 });
       }
@@ -124,7 +128,31 @@ export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
                           )}
                           <div>
                             <h4 className="text-lg font-black text-white italic tracking-tighter uppercase">{group.team}</h4>
-                            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{group.stickers.length} {group.stickers.length === 1 ? 'modelo' : 'modelos'}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{group.stickers.length} {group.stickers.length === 1 ? 'modelo' : 'modelos'}</p>
+                              <span className={cn(
+                                "text-[8px] font-black uppercase tracking-tighter px-1 rounded",
+                                (() => {
+                                  let teamOwned = 0;
+                                  for (let i = 1; i <= (group.team === 'FWC' ? FWC_COUNT : group.team === 'Coca-Cola' ? COCA_COLA_COUNT : STICKERS_PER_TEAM); i++) {
+                                    const id = group.team === 'FWC' ? `UFW-${i}` : group.team === 'Coca-Cola' ? `extra-${i}` : `${group.team}-${i}`;
+                                    if ((stickers[id] || 0) >= 1) teamOwned++;
+                                  }
+                                  const total = group.team === 'FWC' ? FWC_COUNT : group.team === 'Coca-Cola' ? COCA_COLA_COUNT : STICKERS_PER_TEAM;
+                                  return teamOwned === total ? "bg-green-500/10 text-green-500" : "bg-blue-500/10 text-blue-500";
+                                })()
+                              )}>
+                                {(() => {
+                                  let teamOwned = 0;
+                                  for (let i = 1; i <= (group.team === 'FWC' ? FWC_COUNT : group.team === 'Coca-Cola' ? COCA_COLA_COUNT : STICKERS_PER_TEAM); i++) {
+                                    const id = group.team === 'FWC' ? `UFW-${i}` : group.team === 'Coca-Cola' ? `extra-${i}` : `${group.team}-${i}`;
+                                    if ((stickers[id] || 0) >= 1) teamOwned++;
+                                  }
+                                  const total = group.team === 'FWC' ? FWC_COUNT : group.team === 'Coca-Cola' ? COCA_COLA_COUNT : STICKERS_PER_TEAM;
+                                  return teamOwned === total ? 'Completo' : 'Incompleto';
+                                })()}
+                              </span>
+                            </div>
                           </div>
                         </div>
                         <div className="bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-500/20">
