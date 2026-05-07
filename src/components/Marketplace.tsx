@@ -11,7 +11,7 @@ import { cn } from '../lib/utils';
 export default function Marketplace({ userProfile }: { userProfile: UserProfile | null }) {
   const [allProgress, setAllProgress] = useState<AlbumProgress[]>([]);
   const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
-  const [, loading] = useState(true);
+  const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,51 +68,75 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
     }
   }, [userProfile]);
 
-  const matches = allProgress.map(p => {
-    const peerUser = allUsers[p.userId];
-    if (!peerUser || peerUser.status !== 'approved') return null;
+  const matches = React.useMemo(() => {
+    return allProgress.map(p => {
+      const peerUser = allUsers[p.userId];
+      if (!peerUser || peerUser.status !== 'approved') return null;
 
-    // Aggregate my stickers
-    const myStickersNormalized: Record<string, number> = {};
-    Object.entries(myProgress?.stickers || {}).forEach(([id, s]) => {
-      const norm = normalizeStickerId(id);
-      myStickersNormalized[norm] = (myStickersNormalized[norm] || 0) + s;
+      // Aggregate my stickers
+      const myStickersNormalized: Record<string, number> = {};
+      Object.entries(myProgress?.stickers || {}).forEach(([id, s]) => {
+        const norm = normalizeStickerId(id);
+        myStickersNormalized[norm] = (myStickersNormalized[norm] || 0) + s;
+      });
+
+      // Aggregate peer stickers
+      const peerStickersNormalized: Record<string, number> = {};
+      Object.entries(p.stickers).forEach(([id, s]) => {
+        const norm = normalizeStickerId(id);
+        peerStickersNormalized[norm] = (peerStickersNormalized[norm] || 0) + s;
+      });
+
+      const peerRepeated = Object.entries(peerStickersNormalized)
+        .filter(([_, s]) => s > 1)
+        .map(([id]) => id);
+
+      const myRepeated = Object.entries(myStickersNormalized)
+        .filter(([_, s]) => s > 1)
+        .map(([id]) => id);
+
+      const theyCanGiveMe = peerRepeated.filter(id => (myStickersNormalized[id] || 0) === 0);
+      const iCanGiveThem = myRepeated.filter(id => (peerStickersNormalized[id] || 0) === 0);
+
+      if (theyCanGiveMe.length === 0 && iCanGiveThem.length === 0) return null;
+
+      const getLabel = (id: string) => {
+        const [teamName, num] = id.split('-');
+        const label = teamName === 'UFW' ? 'FWC' : teamName;
+        return `${label} ${num}`;
+      };
+
+      return {
+        userId: p.userId,
+        user: peerUser,
+        iNeed: theyCanGiveMe,
+        theyNeed: iCanGiveThem,
+        getLabel
+      };
+    }).filter((m): m is any => m !== null);
+  }, [allProgress, allUsers, myProgress]);
+
+  const filteredMatches = React.useMemo(() => {
+    if (!search.trim()) return matches;
+    
+    const terms = search.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\s+/).filter(Boolean);
+    
+    return matches.filter(match => {
+      // Filter by collector name
+      const userName = match.user.displayName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const matchesUserName = terms.every(term => userName.includes(term));
+      if (matchesUserName) return true;
+
+      // Filter by stickers (team + number)
+      const allStickers = [...match.iNeed, ...match.theyNeed];
+      const labels = allStickers.map(id => match.getLabel(id).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+      
+      // Check if any single sticker matches all search terms (e.g. "ARG" and "5")
+      return labels.some(label => {
+        return terms.every(term => label.includes(term));
+      });
     });
-
-    // Aggregate peer stickers
-    const peerStickersNormalized: Record<string, number> = {};
-    Object.entries(p.stickers).forEach(([id, s]) => {
-      const norm = normalizeStickerId(id);
-      peerStickersNormalized[norm] = (peerStickersNormalized[norm] || 0) + s;
-    });
-
-    const peerRepeated = Object.entries(peerStickersNormalized)
-      .filter(([_, s]) => s > 1)
-      .map(([id]) => id);
-
-    const myRepeated = Object.entries(myStickersNormalized)
-      .filter(([_, s]) => s > 1)
-      .map(([id]) => id);
-
-    const theyCanGiveMe = peerRepeated.filter(id => (myStickersNormalized[id] || 0) === 0);
-    const iCanGiveThem = myRepeated.filter(id => (peerStickersNormalized[id] || 0) === 0);
-
-    if (theyCanGiveMe.length === 0 && iCanGiveThem.length === 0) return null;
-
-    const getLabel = (id: string) => {
-      const [teamName, num] = id.split('-');
-      const label = teamName === 'UFW' ? 'FWC' : teamName;
-      return `${label} ${num}`;
-    };
-
-    return {
-      userId: p.userId,
-      user: peerUser,
-      iNeed: theyCanGiveMe,
-      theyNeed: iCanGiveThem,
-      getLabel
-    };
-  }).filter(Boolean);
+  }, [matches, search]);
 
   const startChat = async (peerUserId: string) => {
     if (!userProfile) return;
@@ -168,14 +192,25 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold text-white tracking-tight">Zona de Intercambio</h2>
           <p className="text-zinc-400 mt-1">Conecta con coleccionistas que tienen lo que te falta.</p>
         </div>
       </header>
 
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+        <input 
+          type="text"
+          placeholder="Buscar por coleccionista, equipo o número (ej: ARG 10)..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all font-medium"
+        />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {matches.length > 0 ? matches.map((match: any) => (
+        {filteredMatches.length > 0 ? filteredMatches.map((match: any) => (
           <motion.div 
             key={match.userId}
             initial={{ opacity: 0, x: -10 }}
