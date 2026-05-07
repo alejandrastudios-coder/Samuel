@@ -218,10 +218,22 @@ export default function App() {
     }
   }, [user]);
 
+  // Notification sound helper
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(e => console.log('Autoplay prevented or sound error:', e));
+    } catch (err) {
+      console.error('Error playing sound:', err);
+    }
+  };
+
   // Badge API Logic: Update icon badge based on unread messages
   useEffect(() => {
-    if (user && 'setAppBadge' in navigator) {
-      // Small delay to ensure DB is ready
+    let lastUnreadCount = 0;
+    
+    if (user) {
       const q = query(
         collection(db, 'chats'),
         where('participants', 'array-contains', user.uid)
@@ -231,17 +243,25 @@ export default function App() {
         let unreadTotal = 0;
         snapshot.docs.forEach(doc => {
           const data = doc.data();
-          // Check if last message was not by current user and chat hasn't been read
           if (data.lastMessageBy && data.lastMessageBy !== user.uid && data.unreadCount?.[user.uid]) {
             unreadTotal += data.unreadCount[user.uid];
           }
         });
 
-        if (unreadTotal > 0) {
-          (navigator as any).setAppBadge(unreadTotal).catch(console.error);
-        } else {
-          (navigator as any).clearAppBadge().catch(console.error);
+        // Update badge
+        if ('setAppBadge' in navigator) {
+          if (unreadTotal > 0) {
+            (navigator as any).setAppBadge(unreadTotal).catch(console.error);
+          } else {
+            (navigator as any).clearAppBadge().catch(console.error);
+          }
         }
+
+        // Play sound if unread count increased
+        if (unreadTotal > lastUnreadCount) {
+          playNotificationSound();
+        }
+        lastUnreadCount = unreadTotal;
       });
       
       return () => unsub();
