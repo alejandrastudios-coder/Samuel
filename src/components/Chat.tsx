@@ -4,7 +4,7 @@ import { collection, query, onSnapshot, doc, orderBy, addDoc, serverTimestamp, u
 import { db } from '../lib/firebase';
 import { UserProfile, Chat as ChatType, Message, AlbumProgress } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, User as UserIcon, ArrowLeft, MoreVertical, ShieldCheck, LogOut, ArrowRightLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, User as UserIcon, ArrowLeft, MoreVertical, ShieldCheck, LogOut, ArrowRightLeft, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
 import { TEAMS } from '../constants';
@@ -37,7 +37,12 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
       );
       
       unsubChats = onSnapshot(q, (snap) => {
-        setChats(snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatType)));
+        const chatData = snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatType));
+        // Filter out chats hidden by the current user
+        setChats(chatData.filter(c => {
+          const hiddenBy = c.hiddenBy || [];
+          return !hiddenBy.includes(userProfile.userId);
+        }));
       }, (error) => console.error("Error fetching chats:", error));
 
       // Fetch all users
@@ -97,6 +102,34 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
       lastMessage: msgText,
       updatedAt: serverTimestamp()
     });
+  };
+
+  const deleteChat = async (e: React.MouseEvent, chatIdToDelete: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!userProfile) return;
+    
+    if (confirm('¿Estás seguro de que quieres eliminar este chat?')) {
+      try {
+        const chatRef = doc(db, 'chats', chatIdToDelete);
+        const chatDoc = chats.find(c => c.id === chatIdToDelete);
+        if (!chatDoc) return;
+        
+        const hiddenBy = chatDoc.hiddenBy || [];
+        if (!hiddenBy.includes(userProfile.userId)) {
+          await updateDoc(chatRef, {
+            hiddenBy: [...hiddenBy, userProfile.userId]
+          });
+        }
+        
+        if (chatId === chatIdToDelete) {
+          navigate('/chat');
+        }
+      } catch (error) {
+        console.error("Error deleting chat:", error);
+      }
+    }
   };
 
   const activeChat = chats.find(c => c.id === chatId);
@@ -159,7 +192,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                 key={chat.id} 
                 to={`/chat/${chat.id}`}
                 className={cn(
-                  "flex items-center gap-4 p-4 transition-all hover:bg-zinc-800/50",
+                  "flex items-center gap-4 p-4 transition-all hover:bg-zinc-800/50 group",
                   isActive && "bg-green-600/10 border-r-2 border-green-500"
                 )}
               >
@@ -173,7 +206,16 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                       {chat.updatedAt ? format(chat.updatedAt.toDate(), 'HH:mm') : ''}
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-500 truncate">{chat.lastMessage}</p>
+                  <div className="flex justify-between items-center gap-2">
+                    <p className="text-xs text-zinc-500 truncate flex-1">{chat.lastMessage}</p>
+                    <button 
+                      onClick={(e) => deleteChat(e, chat.id)}
+                      className="p-1.5 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      title="Eliminar chat"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </Link>
             );

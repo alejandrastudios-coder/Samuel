@@ -46,7 +46,8 @@ export const InstallPrompt: React.FC = () => {
     }
 
     // If it's iOS and not already in standalone mode, show instructions
-    if (ios && !(window.navigator as any).standalone) {
+    const isInIframe = window.self !== window.top;
+    if ((ios && !(window.navigator as any).standalone) || isInIframe) {
       // We check if we've already shown it this session to not be annoying
       const hasShown = sessionStorage.getItem('ios-install-prompt-shown');
       if (!hasShown) {
@@ -112,12 +113,21 @@ export const InstallPrompt: React.FC = () => {
             <div className="flex-1">
               <h3 className="text-white font-bold text-sm">Instalar Aplicación</h3>
               <p className="text-zinc-400 text-xs mt-1 leading-relaxed">
-                {isIOS 
-                  ? 'Para instalar: pulsa el icono de "Compartir" y selecciona "Añadir a la pantalla de inicio".' 
-                  : 'Accede más rápido instalando la app en tu pantalla de inicio.'}
+                {window.self !== window.top 
+                  ? 'Para poder instalar la aplicación, debes abrirla en una pestaña nueva.'
+                  : isIOS 
+                    ? 'Para instalar: pulsa el icono de "Compartir" y selecciona "Añadir a la pantalla de inicio".' 
+                    : 'Accede más rápido instalando la app en tu pantalla de inicio.'}
               </p>
               
-              {!isIOS ? (
+              {window.self !== window.top ? (
+                <button 
+                  onClick={() => window.open(window.location.href, '_blank')}
+                  className="mt-4 w-full py-2.5 bg-white text-black rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors"
+                >
+                  Abrir en pestaña nueva
+                </button>
+              ) : !isIOS ? (
                 <button 
                   onClick={handleInstallClick}
                   className="mt-4 w-full py-2.5 bg-green-500 text-black rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-green-400 transition-colors"

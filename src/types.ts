@@ -26,6 +26,7 @@ export interface Chat {
   participants: string[];
   lastMessage: string;
   updatedAt: any;
+  hiddenBy?: string[];
 }
 
 export interface Message {

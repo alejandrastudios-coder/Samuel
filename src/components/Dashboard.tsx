@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, UFW_COUNT, COCA_COLA_COUNT } from '../constants';
 import { motion } from 'motion/react';
-import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight } from 'lucide-react';
+import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RepeatedList } from './RepeatedList';
@@ -40,11 +40,14 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     window.dispatchEvent(new CustomEvent('trigger-install-prompt'));
   };
 
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+
   useEffect(() => {
     if (userProfile) {
       return onSnapshot(doc(db, 'album_progress', userProfile.userId), (doc) => {
          if (doc.exists()) {
            setProgress(doc.data() as AlbumProgress);
+           setLastUpdate(new Date());
          }
       });
     }
@@ -140,6 +143,10 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           <div className="flex justify-between items-start">
             <WorldCupBall className="w-16 h-16 mb-4 shadow-2xl" animate />
             <div className="flex gap-2">
+              <div className="flex items-center gap-2 px-3 py-1 bg-black/30 backdrop-blur-sm rounded-lg border border-white/5 mr-2">
+                <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" style={{ animationDuration: '3s' }} />
+                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">En Vivo</span>
+              </div>
               <button 
                 onClick={() => navigate('/market')}
                 className="relative flex items-center gap-2 px-4 py-2 bg-zinc-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-zinc-700 transition-colors"
