@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, getDocs, setDoc, where, getDoc, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress, StickerStatus } from '../types';
-import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, FLAGS } from '../constants';
+import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, FLAGS, normalizeStickerId } from '../constants';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Trophy, Star, Repeat, ChevronRight, Check, ArrowLeft, LogOut, User as UserIcon, X, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -30,18 +30,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
     setLoadingMatches(true);
     setIsMatchModalOpen(true);
     try {
-      const normalizeId = (id: string) => {
-        if (id.startsWith('team-')) {
-          const parts = id.split('-');
-          const index = parseInt(parts[1]);
-          if (!isNaN(index) && TEAMS[index]) {
-            return `${TEAMS[index]}-${parts[2]}`;
-          }
-        }
-        return id;
-      };
-
-      const targetNormId = normalizeId(stickerId);
+      const targetNormId = normalizeStickerId(stickerId);
 
       const querySnap = await getDocs(collection(db, 'album_progress'));
       const usersSnap = await getDocs(collection(db, 'users'));
@@ -59,7 +48,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
           // Check if user has targetNormId repeated
           const counts: Record<string, number> = {};
           Object.entries(p.stickers).forEach(([id, s]) => {
-            const norm = normalizeId(id);
+            const norm = normalizeStickerId(id);
             counts[norm] = (counts[norm] || 0) + s;
           });
           return (counts[targetNormId] || 0) > 1;
@@ -114,6 +103,17 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
     return list;
   }, []);
 
+  const normalizedMyStickers = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (progress?.stickers) {
+      Object.entries(progress.stickers).forEach(([id, s]) => {
+        const norm = normalizeStickerId(id);
+        counts[norm] = (counts[norm] || 0) + s;
+      });
+    }
+    return counts;
+  }, [progress?.stickers]);
+
   const filteredGroups = useMemo(() => {
     return groups.filter(group => {
       // Search filter
@@ -122,11 +122,9 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
       if (filter === 'all') return true;
 
-      const groupIndex = groups.findIndex(g => g.id === group.id);
       const ownedCount = Array.from({ length: group.count }).filter((_, i) => {
-        const idByName = `${group.id}-${i + 1}`;
-        const idByIndex = `team-${groupIndex}-${i + 1}`;
-        return (progress?.stickers[idByName] || progress?.stickers[idByIndex] || 0) >= 1;
+        const id = `${group.id}-${i + 1}`;
+        return (normalizedMyStickers[id] || 0) >= 1;
       }).length;
 
       if (filter === 'complete') return ownedCount === group.count;
@@ -135,7 +133,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
       return true;
     });
-  }, [groups, search, filter, progress]);
+  }, [groups, search, filter, normalizedMyStickers]);
 
   const toggleSticker = async (stickerId: string, decrement: boolean = false) => {
     if (!userProfile) return;

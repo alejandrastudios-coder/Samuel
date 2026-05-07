@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, query, onSnapshot, doc, getDoc, setDoc, addDoc, serverTimestamp, where, getDocs, or, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { UserProfile, AlbumProgress, Chat } from '../types';
-import { TEAMS } from '../constants';
+import { TEAMS, normalizeStickerId } from '../constants';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Search, MapPin, MessageSquare, Repeat, User as UserIcon, ArrowRightLeft, ArrowLeft, LogOut } from 'lucide-react';
@@ -72,28 +72,17 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
     const peerUser = allUsers[p.userId];
     if (!peerUser || peerUser.status !== 'approved') return null;
 
-    const normalizeId = (id: string) => {
-      if (id.startsWith('team-')) {
-        const parts = id.split('-');
-        const index = parseInt(parts[1]);
-        if (!isNaN(index) && TEAMS[index]) {
-          return `${TEAMS[index]}-${parts[2]}`;
-        }
-      }
-      return id;
-    };
-
     // Aggregate my stickers
     const myStickersNormalized: Record<string, number> = {};
     Object.entries(myProgress?.stickers || {}).forEach(([id, s]) => {
-      const norm = normalizeId(id);
+      const norm = normalizeStickerId(id);
       myStickersNormalized[norm] = (myStickersNormalized[norm] || 0) + s;
     });
 
     // Aggregate peer stickers
     const peerStickersNormalized: Record<string, number> = {};
     Object.entries(p.stickers).forEach(([id, s]) => {
-      const norm = normalizeId(id);
+      const norm = normalizeStickerId(id);
       peerStickersNormalized[norm] = (peerStickersNormalized[norm] || 0) + s;
     });
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress } from '../types';
-import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT } from '../constants';
+import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId } from '../constants';
 import { motion } from 'motion/react';
 import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -72,32 +72,26 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
 
   const totalPossible = (TEAMS.length * STICKERS_PER_TEAM) + FWC_COUNT + COCA_COLA_COUNT;
   const stickers = progress?.stickers || {};
-  const ownedCount = Object.values(stickers).filter(s => s >= 1).length;
+  
+  // Aggregate stats using normalization
+  const normalizedMyStickers = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    Object.entries(stickers).forEach(([id, s]) => {
+      const norm = normalizeStickerId(id);
+      counts[norm] = (counts[norm] || 0) + s;
+    });
+    return counts;
+  }, [stickers]);
+
+  const ownedCount = Object.values(normalizedMyStickers).filter(s => s >= 1).length;
   
   const repeatedCount = useMemo(() => {
     let count = 0;
-    const counts: Record<string, number> = {};
-    const normalizeId = (id: string) => {
-      if (id.startsWith('team-')) {
-        const parts = id.split('-');
-        const index = parseInt(parts[1]);
-        if (!isNaN(index) && TEAMS[index]) {
-          return `${TEAMS[index]}-${parts[2]}`;
-        }
-      }
-      return id;
-    };
-
-    Object.entries(stickers).forEach(([id, s]) => {
-      const norm = normalizeId(id);
-      counts[norm] = (counts[norm] || 0) + s;
-    });
-
-    Object.values(counts).forEach(s => {
+    Object.values(normalizedMyStickers).forEach(s => {
       if (s > 1) count += (s - 1);
     });
     return count;
-  }, [stickers]);
+  }, [normalizedMyStickers]);
 
   const missingCount = totalPossible - ownedCount;
   const completionRate = Math.round((ownedCount / totalPossible) * 100);
@@ -106,12 +100,11 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     let emptyTeams = 0;
     let incompleteTeams = 0;
     
-    TEAMS.forEach((team, index) => {
+    TEAMS.forEach((team) => {
       let teamOwned = 0;
       for (let i = 1; i <= STICKERS_PER_TEAM; i++) {
-        const idByName = `${team}-${i}`;
-        const idByIndex = `team-${index}-${i}`;
-        if ((stickers[idByName] || stickers[idByIndex] || 0) >= 1) {
+        const id = `${team}-${i}`;
+        if ((normalizedMyStickers[id] || 0) >= 1) {
           teamOwned++;
         }
       }
@@ -124,7 +117,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     });
 
     return { emptyTeams, incompleteTeams };
-  }, [stickers]);
+  }, [normalizedMyStickers]);
 
   const [allProgress, setAllProgress] = useState<AlbumProgress[]>([]);
   const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
@@ -173,25 +166,9 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const matchesCount = useMemo(() => {
     if (!progress || allProgress.length === 0) return 0;
     
-    const normalizeId = (id: string) => {
-      if (id.startsWith('team-')) {
-        const parts = id.split('-');
-        const index = parseInt(parts[1]);
-        if (!isNaN(index) && TEAMS[index]) {
-          return `${TEAMS[index]}-${parts[2]}`;
-        }
-      }
-      return id;
-    };
-
-    const myStickersNormalized: Record<string, number> = {};
-    Object.entries(progress.stickers).forEach(([id, s]) => {
-      myStickersNormalized[normalizeId(id)] = s;
-    });
-
-    const myRepeated = Object.entries(progress.stickers)
+    const myRepeated = Object.entries(normalizedMyStickers)
       .filter(([_, s]) => s > 1)
-      .map(([id]) => normalizeId(id));
+      .map(([id]) => id);
 
     let count = 0;
     allProgress.forEach(peer => {
@@ -200,14 +177,15 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
 
       const peerStickersNormalized: Record<string, number> = {};
       Object.entries(peer.stickers).forEach(([id, s]) => {
-        peerStickersNormalized[normalizeId(id)] = s;
+        const norm = normalizeStickerId(id);
+        peerStickersNormalized[norm] = (peerStickersNormalized[norm] || 0) + s;
       });
 
-      const peerRepeated = Object.entries(peer.stickers)
+      const peerRepeated = Object.entries(peerStickersNormalized)
         .filter(([_, s]) => s > 1)
-        .map(([id]) => normalizeId(id));
+        .map(([id]) => id);
       
-      const theyCanGiveMe = peerRepeated.some(id => (myStickersNormalized[id] || 0) === 0);
+      const theyCanGiveMe = peerRepeated.some(id => (normalizedMyStickers[id] || 0) === 0);
       const iCanGiveThem = myRepeated.some(id => (peerStickersNormalized[id] || 0) === 0);
       
       if (theyCanGiveMe || iCanGiveThem) {
@@ -215,7 +193,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       }
     });
     return count;
-  }, [progress, allProgress, allUsers]);
+  }, [progress, allProgress, allUsers, normalizedMyStickers]);
 
   const stats = [
     { name: 'Completado', value: `${completionRate}%`, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-500/10' },

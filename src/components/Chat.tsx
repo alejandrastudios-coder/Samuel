@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Send, User as UserIcon, ArrowLeft, MoreVertical, ShieldCheck, LogOut, ArrowRightLeft, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
-import { TEAMS } from '../constants';
+import { TEAMS, normalizeStickerId } from '../constants';
 
 export default function Chat({ userProfile }: { userProfile: UserProfile | null }) {
   const { chatId } = useParams<{ chatId: string }>();
@@ -203,28 +203,17 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
     // If peer progress doesn't exist, assume they have 0 stickers
     const pStickers = peerProgress?.stickers || {};
 
-    const normalizeId = (id: string) => {
-      if (id.startsWith('team-')) {
-        const parts = id.split('-');
-        const index = parseInt(parts[1]);
-        if (!isNaN(index) && TEAMS[index]) {
-          return `${TEAMS[index]}-${parts[2]}`;
-        }
-      }
-      return id;
-    };
-
     // Normalize my stickers: aggregate by normalized ID
     const myStickersNormalized: Record<string, number> = {};
     Object.entries(myProgress.stickers).forEach(([id, s]) => {
-      const norm = normalizeId(id);
+      const norm = normalizeStickerId(id);
       myStickersNormalized[norm] = Math.max(myStickersNormalized[norm] || 0, s);
     });
 
     // Normalize peer stickers: aggregate by normalized ID
     const peerStickersNormalized: Record<string, number> = {};
     Object.entries(pStickers).forEach(([id, s]) => {
-      const norm = normalizeId(id);
+      const norm = normalizeStickerId(id);
       peerStickersNormalized[norm] = Math.max(peerStickersNormalized[norm] || 0, s);
     });
 
