@@ -181,15 +181,27 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
   };
 
   useEffect(() => {
-    if (!peerId) return;
+    if (!peerId) {
+      setPeerProgress(null);
+      return;
+    }
+    setPeerProgress(null);
     const unsubPeerProgress = onSnapshot(doc(db, 'album_progress', peerId), (snap) => {
-      if (snap.exists()) setPeerProgress(snap.data() as AlbumProgress);
+      if (snap.exists()) {
+        setPeerProgress(snap.data() as AlbumProgress);
+      } else {
+        setPeerProgress({ userId: peerId, stickers: {} } as AlbumProgress);
+      }
     });
     return unsubPeerProgress;
   }, [peerId]);
 
   const tradeInfo = useMemo(() => {
-    if (!myProgress || !peerProgress) return null;
+    // If we don't have my progress, we can't calculate anything
+    if (!myProgress) return null;
+    
+    // If peer progress doesn't exist, assume they have 0 stickers
+    const pStickers = peerProgress?.stickers || {};
 
     const normalizeId = (id: string) => {
       if (id.startsWith('team-')) {
@@ -202,32 +214,34 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
       return id;
     };
 
+    // Normalize my stickers: aggregate by normalized ID
     const myStickersNormalized: Record<string, number> = {};
     Object.entries(myProgress.stickers).forEach(([id, s]) => {
-      myStickersNormalized[normalizeId(id)] = s;
+      const norm = normalizeId(id);
+      myStickersNormalized[norm] = Math.max(myStickersNormalized[norm] || 0, s);
     });
 
+    // Normalize peer stickers: aggregate by normalized ID
     const peerStickersNormalized: Record<string, number> = {};
-    Object.entries(peerProgress.stickers).forEach(([id, s]) => {
-      peerStickersNormalized[normalizeId(id)] = s;
+    Object.entries(pStickers).forEach(([id, s]) => {
+      const norm = normalizeId(id);
+      peerStickersNormalized[norm] = Math.max(peerStickersNormalized[norm] || 0, s);
     });
 
-    const iNeed = Object.entries(peerProgress.stickers)
-      .filter(([id, status]) => status >= 2 && (myStickersNormalized[normalizeId(id)] || 0) === 0)
-      .map(([id]) => {
-        const normId = normalizeId(id);
+    const iNeed = Object.entries(peerStickersNormalized)
+      .filter(([normId, status]) => status >= 2 && (myStickersNormalized[normId] || 0) === 0)
+      .map(([normId]) => {
         const [teamName, num] = normId.split('-');
         const label = teamName === 'UFW' ? 'FWC' : teamName;
-        return { id, label: `${label} ${num}` };
+        return { id: normId, label: `${label} ${num}` };
       });
 
-    const theyNeed = Object.entries(myProgress.stickers)
-      .filter(([id, status]) => status >= 2 && (peerStickersNormalized[normalizeId(id)] || 0) === 0)
-      .map(([id]) => {
-        const normId = normalizeId(id);
+    const theyNeed = Object.entries(myStickersNormalized)
+      .filter(([normId, status]) => status >= 2 && (peerStickersNormalized[normId] || 0) === 0)
+      .map(([normId]) => {
         const [teamName, num] = normId.split('-');
         const label = teamName === 'UFW' ? 'FWC' : teamName;
-        return { id, label: `${label} ${num}` };
+        return { id: normId, label: `${label} ${num}` };
       });
 
     return { iNeed, theyNeed };

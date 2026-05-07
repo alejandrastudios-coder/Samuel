@@ -76,29 +76,55 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   
   const repeatedCount = useMemo(() => {
     let count = 0;
-    // Standard teams
-    TEAMS.forEach((teamName, index) => {
-      for (let i = 1; i <= STICKERS_PER_TEAM; i++) {
-        const idByName = `${teamName}-${i}`;
-        const idByIndex = `team-${index}-${i}`;
-        const s = stickers[idByName] || stickers[idByIndex] || 0;
-        if (s > 1) count += (s - 1);
+    const counts: Record<string, number> = {};
+    const normalizeId = (id: string) => {
+      if (id.startsWith('team-')) {
+        const parts = id.split('-');
+        const index = parseInt(parts[1]);
+        if (!isNaN(index) && TEAMS[index]) {
+          return `${TEAMS[index]}-${parts[2]}`;
+        }
       }
+      return id;
+    };
+
+    Object.entries(stickers).forEach(([id, s]) => {
+      const norm = normalizeId(id);
+      counts[norm] = (counts[norm] || 0) + s;
     });
-    // Specials
-    for (let i = 1; i <= FWC_COUNT; i++) {
-      const s = stickers[`UFW-${i}`] || 0;
+
+    Object.values(counts).forEach(s => {
       if (s > 1) count += (s - 1);
-    }
-    for (let i = 1; i <= COCA_COLA_COUNT; i++) {
-      const s = stickers[`extra-${i}`] || 0;
-      if (s > 1) count += (s - 1);
-    }
+    });
     return count;
   }, [stickers]);
 
   const missingCount = totalPossible - ownedCount;
   const completionRate = Math.round((ownedCount / totalPossible) * 100);
+
+  const teamStats = useMemo(() => {
+    let emptyTeams = 0;
+    let incompleteTeams = 0;
+    
+    TEAMS.forEach((team, index) => {
+      let teamOwned = 0;
+      for (let i = 1; i <= STICKERS_PER_TEAM; i++) {
+        const idByName = `${team}-${i}`;
+        const idByIndex = `team-${index}-${i}`;
+        if ((stickers[idByName] || stickers[idByIndex] || 0) >= 1) {
+          teamOwned++;
+        }
+      }
+      
+      if (teamOwned === 0) {
+        emptyTeams++;
+      } else if (teamOwned < STICKERS_PER_TEAM) {
+        incompleteTeams++;
+      }
+    });
+
+    return { emptyTeams, incompleteTeams };
+  }, [stickers]);
 
   const [allProgress, setAllProgress] = useState<AlbumProgress[]>([]);
   const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
@@ -196,6 +222,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     { name: 'En Álbum', value: ownedCount, icon: Star, color: 'text-green-500', bg: 'bg-green-500/10' },
     { name: 'Repetidas', value: repeatedCount, icon: Repeat, color: 'text-amber-500', bg: 'bg-amber-500/10', action: () => setIsRepeatedListOpen(true) },
     { name: 'Intercambios', value: matchesCount, icon: ArrowRightLeft, color: 'text-purple-500', bg: 'bg-purple-500/10', action: () => navigate('/market') },
+    { name: 'Equipos Vacíos', value: teamStats.emptyTeams, icon: BarChart3, color: 'text-zinc-500', bg: 'bg-zinc-500/10' },
+    { name: 'Incompletos', value: teamStats.incompleteTeams, icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-500/10' },
   ];
 
   return (

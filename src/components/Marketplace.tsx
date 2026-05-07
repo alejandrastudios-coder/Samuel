@@ -83,25 +83,29 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
       return id;
     };
 
-    const peerRepeated = Object.entries(p.stickers)
-      .filter(([_, s]) => s > 1)
-      .map(([id]) => normalizeId(id));
-
+    // Aggregate my stickers
     const myStickersNormalized: Record<string, number> = {};
     Object.entries(myProgress?.stickers || {}).forEach(([id, s]) => {
-      myStickersNormalized[normalizeId(id)] = s;
+      const norm = normalizeId(id);
+      myStickersNormalized[norm] = (myStickersNormalized[norm] || 0) + s;
     });
 
-    const myRepeated = Object.entries(myProgress?.stickers || {})
-      .filter(([_, s]) => s > 1)
-      .map(([id]) => normalizeId(id));
-
-    const theyCanGiveMe = peerRepeated.filter(id => (myStickersNormalized[id] || 0) === 0);
-    
+    // Aggregate peer stickers
     const peerStickersNormalized: Record<string, number> = {};
     Object.entries(p.stickers).forEach(([id, s]) => {
-      peerStickersNormalized[normalizeId(id)] = s;
+      const norm = normalizeId(id);
+      peerStickersNormalized[norm] = (peerStickersNormalized[norm] || 0) + s;
     });
+
+    const peerRepeated = Object.entries(peerStickersNormalized)
+      .filter(([_, s]) => s > 1)
+      .map(([id]) => id);
+
+    const myRepeated = Object.entries(myStickersNormalized)
+      .filter(([_, s]) => s > 1)
+      .map(([id]) => id);
+
+    const theyCanGiveMe = peerRepeated.filter(id => (myStickersNormalized[id] || 0) === 0);
     const iCanGiveThem = myRepeated.filter(id => (peerStickersNormalized[id] || 0) === 0);
 
     if (theyCanGiveMe.length === 0 && iCanGiveThem.length === 0) return null;

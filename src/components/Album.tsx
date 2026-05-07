@@ -30,9 +30,19 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
     setLoadingMatches(true);
     setIsMatchModalOpen(true);
     try {
-      // 1. Find all users who have this sticker repeated
-      // We'll query all album_progress but since we can't deep query map values effectively in a single simple query here without specific indexes, 
-      // we'll fetch all and filter client side for now (given small scale) OR we could optimize if needed.
+      const normalizeId = (id: string) => {
+        if (id.startsWith('team-')) {
+          const parts = id.split('-');
+          const index = parseInt(parts[1]);
+          if (!isNaN(index) && TEAMS[index]) {
+            return `${TEAMS[index]}-${parts[2]}`;
+          }
+        }
+        return id;
+      };
+
+      const targetNormId = normalizeId(stickerId);
+
       const querySnap = await getDocs(collection(db, 'album_progress'));
       const usersSnap = await getDocs(collection(db, 'users'));
       
@@ -44,8 +54,17 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
           userId: d.id,
           ...d.data()
         } as AlbumProgress))
-        .filter(p => p.userId !== userProfile?.userId && p.stickers[stickerId] > 1)
-        .map(p => ({ user: usersMap[p.userId], stickerId }))
+        .filter(p => p.userId !== userProfile?.userId)
+        .filter(p => {
+          // Check if user has targetNormId repeated
+          const counts: Record<string, number> = {};
+          Object.entries(p.stickers).forEach(([id, s]) => {
+            const norm = normalizeId(id);
+            counts[norm] = (counts[norm] || 0) + s;
+          });
+          return (counts[targetNormId] || 0) > 1;
+        })
+        .map(p => ({ user: usersMap[p.userId], stickerId: targetNormId }))
         .filter(m => m.user && m.user.status === 'approved');
 
       setMatchingUsers(matches);
@@ -70,6 +89,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
     }
   }, [userProfile]);
 
+  const [filter, setFilter] = useState<'all' | 'complete' | 'empty' | 'incomplete'>('all');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const toggleGroup = (groupId: string) => {
@@ -94,9 +114,28 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
     return list;
   }, []);
 
-  const filteredGroups = groups.filter(g => 
-    g.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredGroups = useMemo(() => {
+    return groups.filter(group => {
+      // Search filter
+      const matchesSearch = group.name.toLowerCase().includes(search.toLowerCase());
+      if (!matchesSearch) return false;
+
+      if (filter === 'all') return true;
+
+      const groupIndex = groups.findIndex(g => g.id === group.id);
+      const ownedCount = Array.from({ length: group.count }).filter((_, i) => {
+        const idByName = `${group.id}-${i + 1}`;
+        const idByIndex = `team-${groupIndex}-${i + 1}`;
+        return (progress?.stickers[idByName] || progress?.stickers[idByIndex] || 0) >= 1;
+      }).length;
+
+      if (filter === 'complete') return ownedCount === group.count;
+      if (filter === 'empty') return ownedCount === 0;
+      if (filter === 'incomplete') return ownedCount > 0 && ownedCount < group.count;
+
+      return true;
+    });
+  }, [groups, search, filter, progress]);
 
   const toggleSticker = async (stickerId: string, decrement: boolean = false) => {
     if (!userProfile) return;
@@ -131,15 +170,39 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
             <p className="text-sm text-zinc-500">Toca para añadir. Click derecho o botones para reducir.</p>
           </div>
         </div>
-        <div className="relative flex-1 md:w-72">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <input 
-            type="text"
-            placeholder="Buscar selección..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
-          />
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input 
+              type="text"
+              placeholder="Buscar selección..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
+            />
+          </div>
+
+          <div className="flex items-center gap-1 bg-zinc-900/50 p-1 border border-zinc-800 rounded-2xl w-full md:w-auto overflow-x-auto no-scrollbar">
+            {[
+              { id: 'all', label: 'Todos' },
+              { id: 'complete', label: 'Completos' },
+              { id: 'empty', label: 'Vacíos' },
+              { id: 'incomplete', label: 'Incompletos' }
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id as any)}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
+                  filter === f.id 
+                    ? "bg-white text-black shadow-lg" 
+                    : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
