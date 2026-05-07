@@ -5,15 +5,17 @@ import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, PRIZES_COUNT, COCA_COLA_COUNT } from '../constants';
 import { motion } from 'motion/react';
-import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download } from 'lucide-react';
+import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
+import { RepeatedList } from './RepeatedList';
 
 export default function Dashboard({ userProfile }: { userProfile: UserProfile | null }) {
   const navigate = useNavigate();
   const [progress, setProgress] = useState<AlbumProgress | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isRepeatedListOpen, setIsRepeatedListOpen] = useState(false);
 
   useEffect(() => {
     const handleUnread = (e: any) => setUnreadCount(e.detail);
@@ -124,7 +126,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const stats = [
     { name: 'Completado', value: `${completionRate}%`, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-500/10' },
     { name: 'En Álbum', value: ownedCount, icon: Star, color: 'text-green-500', bg: 'bg-green-500/10' },
-    { name: 'Repetidas', value: repeatedCount, icon: Repeat, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { name: 'Repetidas', value: repeatedCount, icon: Repeat, color: 'text-amber-500', bg: 'bg-amber-500/10', action: () => setIsRepeatedListOpen(true) },
     { name: 'Intercambios', value: matchesCount, icon: ArrowRightLeft, color: 'text-purple-500', bg: 'bg-purple-500/10', action: () => navigate('/market') },
   ];
 
@@ -205,6 +207,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         )}
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
+          const isClickable = !!stat.action;
           return (
             <motion.div 
               key={stat.name}
@@ -215,13 +218,21 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               className={cn(
                 "group relative bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem] transition-all duration-300",
                 "hover:border-zinc-700 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1",
-                stat.action && "cursor-pointer active:scale-95"
+                isClickable && "cursor-pointer active:scale-95 border-zinc-700/50"
               )}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-white/2 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem]" />
               
-              <div className={cn("w-14 h-14 rounded-[1.25rem] flex items-center justify-center mb-6 shadow-2xl relative z-10", stat.bg)}>
-                <Icon className={cn("w-7 h-7 group-hover:scale-110 transition-transform", stat.color)} />
+              <div className="flex justify-between items-start mb-6 relative z-10">
+                <div className={cn("w-14 h-14 rounded-[1.25rem] flex items-center justify-center shadow-2xl transition-transform group-hover:scale-110", stat.bg)}>
+                  <Icon className={cn("w-7 h-7", stat.color)} />
+                </div>
+                {isClickable && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-950 border border-zinc-800 shadow-inner">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">Ver</span>
+                  </div>
+                )}
               </div>
               
               <div className="relative z-10">
@@ -231,6 +242,12 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   {stat.name === 'Repetidas' && <span className="text-[10px] text-amber-500 font-bold uppercase tracking-tighter">Gold</span>}
                 </div>
               </div>
+
+              {isClickable && (
+                <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                  <ChevronRight className="w-5 h-5 text-zinc-600" />
+                </div>
+              )}
             </motion.div>
           );
         })}
@@ -315,6 +332,12 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           </div>
         </section>
       </div>
+
+      <RepeatedList 
+        isOpen={isRepeatedListOpen} 
+        onClose={() => setIsRepeatedListOpen(false)} 
+        stickers={stickers} 
+      />
     </div>
   );
 }

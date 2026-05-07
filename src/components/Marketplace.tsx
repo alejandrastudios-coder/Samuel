@@ -201,8 +201,9 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
             
             <button 
               onClick={() => startChat(match.userId)}
-              className="w-full py-3 bg-zinc-800 text-white rounded-xl text-xs font-bold hover:bg-zinc-700 transition-colors uppercase tracking-widest mt-2"
+              className="w-full py-4 bg-gradient-to-r from-worldcup-red to-worldcup-red/80 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-worldcup-red/20 active:scale-95 transition-all hover:brightness-110 flex items-center justify-center gap-3 mt-2"
             >
+              <MessageSquare className="w-4 h-4" />
               Negociar Intercambio
             </button>
           </motion.div>

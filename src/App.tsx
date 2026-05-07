@@ -277,7 +277,7 @@ export default function App() {
               icon: 'https://cdn-icons-png.flaticon.com/512/1165/1165187.png',
               tag: 'new-message', // Prevents flooding
               renotify: true
-            });
+            } as any);
           }
         }
         lastUnreadCount = unreadTotal;

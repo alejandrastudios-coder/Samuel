@@ -20,6 +20,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
   const [progress, setProgress] = useState<AlbumProgress | null>(null);
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [selectedSticker, setSelectedSticker] = useState<{ id: string; num: number; group: StickerGroup } | null>(null);
   const [matchingUsers, setMatchingUsers] = useState<{ user: UserProfile, stickerId: string }[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
@@ -212,11 +213,10 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                         return (
                           <div key={stickerId} className="relative group/sticker">
                             <button
-                              onClick={() => toggleSticker(stickerId)}
-                              onContextMenu={(e) => { e.preventDefault(); toggleSticker(stickerId, true); }}
+                              onClick={() => setSelectedSticker({ id: stickerId, num: i + 1, group })}
                               className={cn(
-                                "w-full aspect-square rounded-lg text-[10px] font-black flex items-center justify-center transition-all relative border",
-                                count === 0 && "bg-zinc-900 border-zinc-800 text-zinc-700 hover:border-zinc-600",
+                                "w-full aspect-square rounded-xl text-[10px] font-black flex items-center justify-center transition-all relative border-2 active:scale-90",
+                                count === 0 && "bg-zinc-900 border-zinc-800 text-zinc-700 hover:border-zinc-700",
                                 count === 1 && "bg-green-600 border-green-500 text-white shadow-[0_0_10px_rgba(22,163,74,0.3)]",
                                 count >= 2 && "bg-amber-500 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.3)]"
                               )}
@@ -228,15 +228,6 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                                 </div>
                               )}
                             </button>
-                            {count > 0 && (
-                               <button 
-                                 onClick={(e) => { e.stopPropagation(); toggleSticker(stickerId, true); }}
-                                 className="absolute -bottom-1 -left-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover/sticker:opacity-100 transition-opacity hover:bg-red-600 z-10"
-                                 title="Quitar una"
-                               >
-                                 <span className="text-xs font-bold">-</span>
-                               </button>
-                            )}
                             {count === 0 && (
                               <button 
                                 onClick={(e) => { e.stopPropagation(); findWhoHasIt(stickerId); }}
@@ -257,6 +248,73 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
           );
         })}
       </div>
+
+      <AnimatePresence>
+        {selectedSticker && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedSticker(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 p-8 pt-4 bg-zinc-950 border-t border-zinc-800 rounded-t-[3rem] z-[101] shadow-2xl safe-area-bottom"
+            >
+              <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6 opacity-50" />
+              
+              <div className="flex items-center gap-4 mb-8">
+                <div className={cn(
+                  "w-20 h-20 rounded-[2rem] flex items-center justify-center text-3xl font-black italic shadow-2xl border-4",
+                  (progress?.stickers[selectedSticker.id] || 0) === 0 ? "bg-zinc-900 border-zinc-800 text-zinc-700" :
+                  (progress?.stickers[selectedSticker.id] || 0) === 1 ? "bg-green-600 border-green-500 text-white" :
+                  "bg-amber-500 border-amber-400 text-white"
+                )}>
+                  {selectedSticker.num}
+                </div>
+                <div>
+                  <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter">
+                    {selectedSticker.group.name} #{selectedSticker.num}
+                  </h4>
+                  <p className="text-sm text-zinc-500 font-bold uppercase tracking-widest mt-1">
+                    Tienes {(progress?.stickers[selectedSticker.id] || 0)} {(progress?.stickers[selectedSticker.id] || 0) === 1 ? 'copia' : 'copias'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleSticker(selectedSticker.id, true); }}
+                  disabled={(progress?.stickers[selectedSticker.id] || 0) === 0}
+                  className="flex items-center justify-center gap-3 py-6 bg-zinc-900 border border-zinc-800 rounded-[2rem] text-white font-black text-lg transition-all active:scale-95 disabled:opacity-20 disabled:active:scale-100"
+                >
+                  <span className="text-3xl">-</span>
+                  RESTAR
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleSticker(selectedSticker.id); }}
+                  className="flex items-center justify-center gap-3 py-6 bg-white text-black rounded-[2rem] font-black text-lg transition-all active:scale-95"
+                >
+                  <span className="text-3xl">+</span>
+                  SUMAR
+                </button>
+              </div>
+
+              <button
+                onClick={() => setSelectedSticker(null)}
+                className="w-full mt-6 py-2 text-zinc-500 font-black uppercase text-[10px] tracking-[0.2em]"
+              >
+                Cerrar Panel
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {isMatchModalOpen && (
