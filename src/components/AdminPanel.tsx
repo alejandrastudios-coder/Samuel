@@ -92,13 +92,18 @@ export default function AdminPanel() {
     try {
       // 1. Delete progress
       await deleteDoc(doc(db, 'album_progress', userId));
-      // 2. Delete chats
+      // 2. Delete chats and their related messages
       const q = query(collection(db, 'chats'), where('participants', 'array-contains', userId));
       const chatSnap = await getDocs(q);
       for (const d of chatSnap.docs) {
+        // Delete messages subcollection
+        const msgSnap = await getDocs(collection(db, 'chats', d.id, 'messages'));
+        for (const m of msgSnap.docs) {
+          await deleteDoc(m.ref);
+        }
         await deleteDoc(d.ref);
       }
-      // 3. Delete user
+      // 3. Delete user profile doc
       await deleteDoc(doc(db, 'users', userId));
       setConfirmDelete(null);
     } catch (error) {

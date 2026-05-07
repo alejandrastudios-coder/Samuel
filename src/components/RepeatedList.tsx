@@ -16,14 +16,20 @@ export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
 
     // Group by standard teams
     TEAMS.forEach((teamName, index) => {
-      const teamId = `team-${index}`;
       const teamRepeated: { id: string; num: number; count: number }[] = [];
       
       for (let i = 1; i <= STICKERS_PER_TEAM; i++) {
-        const id = `${teamId}-${i}`;
-        const count = stickers[id] || 0;
+        // Support both Argentina-1 and team-0-1 formats
+        const idByName = `${teamName}-${i}`;
+        const idByIndex = `team-${index}-${i}`;
+        
+        const count = (stickers[idByName] || stickers[idByIndex] || 0);
         if (count > 1) {
-          teamRepeated.push({ id, num: i, count: count - 1 });
+          teamRepeated.push({ 
+            id: stickers[idByName] ? idByName : idByIndex, 
+            num: i, 
+            count: count - 1 
+          });
         }
       }
 

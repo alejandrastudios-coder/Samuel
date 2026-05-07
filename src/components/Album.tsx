@@ -145,14 +145,17 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredGroups.map((group, idx) => {
+          const groupIndex = groups.findIndex(g => g.id === group.id);
           const ownedInGroup = Array.from({ length: group.count }).filter((_, i) => {
-            const id = `${group.id}-${i + 1}`;
-            return (progress?.stickers[id] || 0) >= 1;
+            const idByName = `${group.id}-${i + 1}`;
+            const idByIndex = `team-${groupIndex}-${i + 1}`;
+            return (progress?.stickers[idByName] || progress?.stickers[idByIndex] || 0) >= 1;
           }).length;
 
           const hasRepeated = Array.from({ length: group.count }).some((_, i) => {
-            const id = `${group.id}-${i + 1}`;
-            return (progress?.stickers[id] || 0) > 1;
+            const idByName = `${group.id}-${i + 1}`;
+            const idByIndex = `team-${groupIndex}-${i + 1}`;
+            return (progress?.stickers[idByName] || progress?.stickers[idByIndex] || 0) > 1;
           });
           
           const isCompleted = ownedInGroup === group.count;
@@ -230,8 +233,14 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                   >
                     <div className="p-4 grid grid-cols-5 gap-2 border-t border-zinc-800/30">
                       {Array.from({ length: group.count }).map((_, i) => {
-                        const stickerId = `${group.id}-${i + 1}`;
-                        const count = progress?.stickers[stickerId] || 0;
+                        const idByName = `${group.id}-${i + 1}`;
+                        const idByIndex = group.type === 'team' ? `team-${groupIndex}-${i + 1}` : idByName;
+                        
+                        const hasName = progress?.stickers[idByName] !== undefined && progress?.stickers[idByName] > 0;
+                        const hasIndex = progress?.stickers[idByIndex] !== undefined && progress?.stickers[idByIndex] > 0;
+                        
+                        const count = (progress?.stickers[idByName] || progress?.stickers[idByIndex] || 0);
+                        const stickerId = hasIndex && !hasName ? idByIndex : idByName;
                         return (
                           <div key={stickerId} className="relative group/sticker">
                             <button
@@ -412,7 +421,9 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                             const chatSnap = await getDoc(chatRef);
                             
                             if (!chatSnap.exists()) {
-                              const initialMessage = `¡Hola! Vi que tienes la estampa de ${match.stickerId.split('-')[0]} ${match.stickerId.split('-')[1]} repetida y me interesa.`;
+                              const [teamId, num] = match.stickerId.split('-');
+                              const label = teamId === 'UFW' ? 'FWC' : teamId;
+                              const initialMessage = `¡Hola! Vi que tienes la estampa de ${label} ${num} repetida y me interesa.`;
                               await setDoc(chatRef, {
                                 participants,
                                 lastMessage: initialMessage,

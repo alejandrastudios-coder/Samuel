@@ -72,11 +72,37 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
     const peerUser = allUsers[p.userId];
     if (!peerUser || peerUser.status !== 'approved') return null;
 
-    const peerRepeated = Object.entries(p.stickers).filter(([_, s]) => s > 1).map(([id]) => id);
-    const myRepeated = Object.entries(myProgress?.stickers || {}).filter(([_, s]) => s > 1).map(([id]) => id);
+    const normalizeId = (id: string) => {
+      if (id.startsWith('team-')) {
+        const parts = id.split('-');
+        const index = parseInt(parts[1]);
+        if (!isNaN(index) && TEAMS[index]) {
+          return `${TEAMS[index]}-${parts[2]}`;
+        }
+      }
+      return id;
+    };
 
-    const theyCanGiveMe = peerRepeated.filter(id => (myProgress?.stickers[id] || 0) === 0);
-    const iCanGiveThem = myRepeated.filter(id => (p.stickers[id] || 0) === 0);
+    const peerRepeated = Object.entries(p.stickers)
+      .filter(([_, s]) => s > 1)
+      .map(([id]) => normalizeId(id));
+
+    const myStickersNormalized: Record<string, number> = {};
+    Object.entries(myProgress?.stickers || {}).forEach(([id, s]) => {
+      myStickersNormalized[normalizeId(id)] = s;
+    });
+
+    const myRepeated = Object.entries(myProgress?.stickers || {})
+      .filter(([_, s]) => s > 1)
+      .map(([id]) => normalizeId(id));
+
+    const theyCanGiveMe = peerRepeated.filter(id => (myStickersNormalized[id] || 0) === 0);
+    
+    const peerStickersNormalized: Record<string, number> = {};
+    Object.entries(p.stickers).forEach(([id, s]) => {
+      peerStickersNormalized[normalizeId(id)] = s;
+    });
+    const iCanGiveThem = myRepeated.filter(id => (peerStickersNormalized[id] || 0) === 0);
 
     if (theyCanGiveMe.length === 0 && iCanGiveThem.length === 0) return null;
 

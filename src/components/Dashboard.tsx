@@ -73,7 +73,30 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const totalPossible = (TEAMS.length * STICKERS_PER_TEAM) + FWC_COUNT + COCA_COLA_COUNT;
   const stickers = progress?.stickers || {};
   const ownedCount = Object.values(stickers).filter(s => s >= 1).length;
-  const repeatedCount = Object.values(stickers).reduce((acc, s) => acc + (s > 1 ? s - 1 : 0), 0);
+  
+  const repeatedCount = useMemo(() => {
+    let count = 0;
+    // Standard teams
+    TEAMS.forEach((teamName, index) => {
+      for (let i = 1; i <= STICKERS_PER_TEAM; i++) {
+        const idByName = `${teamName}-${i}`;
+        const idByIndex = `team-${index}-${i}`;
+        const s = stickers[idByName] || stickers[idByIndex] || 0;
+        if (s > 1) count += (s - 1);
+      }
+    });
+    // Specials
+    for (let i = 1; i <= FWC_COUNT; i++) {
+      const s = stickers[`UFW-${i}`] || 0;
+      if (s > 1) count += (s - 1);
+    }
+    for (let i = 1; i <= COCA_COLA_COUNT; i++) {
+      const s = stickers[`extra-${i}`] || 0;
+      if (s > 1) count += (s - 1);
+    }
+    return count;
+  }, [stickers]);
+
   const missingCount = totalPossible - ownedCount;
   const completionRate = Math.round((ownedCount / totalPossible) * 100);
 
@@ -124,25 +147,42 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const matchesCount = useMemo(() => {
     if (!progress || allProgress.length === 0) return 0;
     
+    const normalizeId = (id: string) => {
+      if (id.startsWith('team-')) {
+        const parts = id.split('-');
+        const index = parseInt(parts[1]);
+        if (!isNaN(index) && TEAMS[index]) {
+          return `${TEAMS[index]}-${parts[2]}`;
+        }
+      }
+      return id;
+    };
+
+    const myStickersNormalized: Record<string, number> = {};
+    Object.entries(progress.stickers).forEach(([id, s]) => {
+      myStickersNormalized[normalizeId(id)] = s;
+    });
+
+    const myRepeated = Object.entries(progress.stickers)
+      .filter(([_, s]) => s > 1)
+      .map(([id]) => normalizeId(id));
+
     let count = 0;
     allProgress.forEach(peer => {
       const peerUser = allUsers[peer.userId];
       if (!peerUser || peerUser.status !== 'approved') return;
 
-      // Stickers the peer has repeated (more than 1)
+      const peerStickersNormalized: Record<string, number> = {};
+      Object.entries(peer.stickers).forEach(([id, s]) => {
+        peerStickersNormalized[normalizeId(id)] = s;
+      });
+
       const peerRepeated = Object.entries(peer.stickers)
         .filter(([_, s]) => s > 1)
-        .map(([id]) => id);
+        .map(([id]) => normalizeId(id));
       
-      // Stickers I have repeated (more than 1)
-      const myRepeated = Object.entries(progress.stickers)
-        .filter(([_, s]) => s > 1)
-        .map(([id]) => id);
-      
-      // They can give me if they have it repeated AND I don't have it (0 or undefined)
-      const theyCanGiveMe = peerRepeated.some(id => (progress.stickers[id] || 0) === 0);
-      // I can give them if I have it repeated AND they don't have it (0 or undefined)
-      const iCanGiveThem = myRepeated.some(id => (peer.stickers[id] || 0) === 0);
+      const theyCanGiveMe = peerRepeated.some(id => (myStickersNormalized[id] || 0) === 0);
+      const iCanGiveThem = myRepeated.some(id => (peerStickersNormalized[id] || 0) === 0);
       
       if (theyCanGiveMe || iCanGiveThem) {
         count++;
