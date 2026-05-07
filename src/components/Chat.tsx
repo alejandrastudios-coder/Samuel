@@ -118,7 +118,16 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
   };
 
   const activeChat = chats.find(c => c.id === chatId);
-  const peerId = activeChat?.participants.find(p => p !== userProfile?.userId);
+  
+  const peerId = useMemo(() => {
+    if (activeChat) return activeChat.participants.find(p => p !== userProfile?.userId);
+    if (chatId && userProfile) {
+      const parts = chatId.split('_');
+      return parts.find(p => p !== userProfile.userId);
+    }
+    return null;
+  }, [activeChat, chatId, userProfile]);
+
   const peerUser = peerId ? allUsers[peerId] : null;
 
   // Reset unread count when chat is opened
@@ -182,18 +191,43 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
   const tradeInfo = useMemo(() => {
     if (!myProgress || !peerProgress) return null;
 
+    const normalizeId = (id: string) => {
+      if (id.startsWith('team-')) {
+        const parts = id.split('-');
+        const index = parseInt(parts[1]);
+        if (!isNaN(index) && TEAMS[index]) {
+          return `${TEAMS[index]}-${parts[2]}`;
+        }
+      }
+      return id;
+    };
+
+    const myStickersNormalized: Record<string, number> = {};
+    Object.entries(myProgress.stickers).forEach(([id, s]) => {
+      myStickersNormalized[normalizeId(id)] = s;
+    });
+
+    const peerStickersNormalized: Record<string, number> = {};
+    Object.entries(peerProgress.stickers).forEach(([id, s]) => {
+      peerStickersNormalized[normalizeId(id)] = s;
+    });
+
     const iNeed = Object.entries(peerProgress.stickers)
-      .filter(([id, status]) => status === 2 && (myProgress.stickers[id] || 0) === 0)
+      .filter(([id, status]) => status >= 2 && (myStickersNormalized[normalizeId(id)] || 0) === 0)
       .map(([id]) => {
-        const [teamName, num] = id.split('-');
-        return { id, label: `${teamName} ${num}` };
+        const normId = normalizeId(id);
+        const [teamName, num] = normId.split('-');
+        const label = teamName === 'UFW' ? 'FWC' : teamName;
+        return { id, label: `${label} ${num}` };
       });
 
     const theyNeed = Object.entries(myProgress.stickers)
-      .filter(([id, status]) => status === 2 && (peerProgress.stickers[id] || 0) === 0)
+      .filter(([id, status]) => status >= 2 && (peerStickersNormalized[normalizeId(id)] || 0) === 0)
       .map(([id]) => {
-        const [teamName, num] = id.split('-');
-        return { id, label: `${teamName} ${num}` };
+        const normId = normalizeId(id);
+        const [teamName, num] = normId.split('-');
+        const label = teamName === 'UFW' ? 'FWC' : teamName;
+        return { id, label: `${label} ${num}` };
       });
 
     return { iNeed, theyNeed };
