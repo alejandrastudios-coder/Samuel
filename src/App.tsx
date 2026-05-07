@@ -229,6 +229,13 @@ export default function App() {
     }
   };
 
+  // Request notification permissions
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   // Badge API Logic: Update icon badge based on unread messages
   useEffect(() => {
     let lastUnreadCount = 0;
@@ -257,9 +264,21 @@ export default function App() {
           }
         }
 
-        // Play sound if unread count increased
+        // Notify app components
+        window.dispatchEvent(new CustomEvent('unread-total-changed', { detail: unreadTotal }));
+
+        // Play sound and show system notification if unread count increased
         if (unreadTotal > lastUnreadCount) {
           playNotificationSound();
+          
+          if (Notification.permission === 'granted') {
+            new Notification('Stickers 2026', {
+              body: unreadTotal === 1 ? 'Tienes 1 mensaje nuevo' : `Tienes ${unreadTotal} mensajes nuevos`,
+              icon: 'https://cdn-icons-png.flaticon.com/512/1165/1165187.png',
+              tag: 'new-message', // Prevents flooding
+              renotify: true
+            });
+          }
         }
         lastUnreadCount = unreadTotal;
       });

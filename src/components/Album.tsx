@@ -223,9 +223,8 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                             >
                               {i + 1}
                               {count >= 2 && (
-                                <div className="absolute -top-1 -right-1 bg-black text-amber-500 rounded-full px-1 py-0.5 border border-amber-500/50 scale-75 font-bold flex items-center gap-0.5">
-                                   <Repeat className="w-2 h-2" />
-                                   <span className="text-[8px]">x{count - 1}</span>
+                                <div className="absolute -top-2 -right-2 bg-amber-500 text-black rounded-full px-1.5 py-0.5 border-2 border-zinc-900 font-black flex items-center justify-center min-w-[20px] shadow-xl animate-in zoom-in-50">
+                                   <span className="text-[10px]">+{count - 1}</span>
                                 </div>
                               )}
                             </button>

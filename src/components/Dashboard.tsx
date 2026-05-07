@@ -13,6 +13,13 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const navigate = useNavigate();
   const [progress, setProgress] = useState<AlbumProgress | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const handleUnread = (e: any) => setUnreadCount(e.detail);
+    window.addEventListener('unread-total-changed', handleUnread);
+    return () => window.removeEventListener('unread-total-changed', handleUnread);
+  }, []);
 
   useEffect(() => {
     const checkStandalone = () => {
@@ -130,15 +137,29 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         <div className="relative z-10 w-full md:w-auto">
           <div className="flex justify-between items-start">
             <WorldCupBall className="w-16 h-16 mb-4 shadow-2xl" animate />
-            {!isStandalone && (
+            <div className="flex gap-2">
               <button 
-                onClick={triggerInstall}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:scale-105 transition-transform"
+                onClick={() => navigate('/market')}
+                className="relative flex items-center gap-2 px-4 py-2 bg-zinc-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-zinc-700 transition-colors"
               >
-                <Download className="w-4 h-4" />
-                Instalar App
+                <MessageCircle className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center animate-bounce shadow-lg border-2 border-zinc-900">
+                    {unreadCount}
+                  </span>
+                )}
+                Chat
               </button>
-            )}
+              {!isStandalone && (
+                <button 
+                  onClick={triggerInstall}
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:scale-105 transition-transform"
+                >
+                  <Download className="w-4 h-4" />
+                  Instalar App
+                </button>
+              )}
+            </div>
           </div>
           <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">
             ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-red via-worldcup-green to-worldcup-blue animate-gradient-x">{userProfile?.displayName}</span>!
