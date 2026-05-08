@@ -133,7 +133,7 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-zinc-950 overflow-hidden relative p-4 font-sans bg-fluid-waves">
+    <div className="min-h-[100dvh] w-full flex items-center justify-center bg-zinc-950 overflow-hidden relative p-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] font-sans bg-fluid-waves">
       <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none overflow-hidden">
          <div className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-worldcup-red/20 rounded-full blur-[140px] animate-pulse" />
          <div className="absolute -bottom-[10%] -right-[10%] w-[50vw] h-[50vw] bg-worldcup-green/20 rounded-full blur-[120px] animate-pulse transition-all duration-[5000ms]" />

@@ -80,7 +80,10 @@ function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, o
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800 z-50 px-4 md:px-8">
+    <header className={cn(
+      "fixed top-0 left-0 right-0 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800 z-50 px-4 md:px-8",
+      "pt-[env(safe-area-inset-top)] h-[calc(4rem+env(safe-area-inset-top))]"
+    )}>
       <div className="max-w-7xl mx-auto h-full flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 md:gap-8 overflow-x-auto no-scrollbar">
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
@@ -314,14 +317,14 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-green-500/30 selection:text-green-500 flex flex-col">
+      <div className="min-h-[100dvh] bg-zinc-950 text-white font-sans selection:bg-green-500/30 selection:text-green-500 flex flex-col">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/*" element={
             <AuthGuard userProfile={userProfile} profileLoading={profileLoading} logout={handleLogout}>
               <TopNav userProfile={userProfile} onSignOut={handleLogout} />
-              <main className="flex-1 overflow-y-auto pt-16 h-screen">
-                <div className="max-w-7xl mx-auto p-4 md:p-8">
+              <main className="flex-1 overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))] h-[100dvh]">
+                <div className="max-w-7xl mx-auto p-4 md:p-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">
                    <Routes>
                       <Route path="/" element={<Dashboard userProfile={userProfile} />} />
                       <Route path="/album" element={<Album userProfile={userProfile} />} />
