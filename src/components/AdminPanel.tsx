@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, setDoc, serverTimestamp, getDocs, where } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, setDoc, serverTimestamp, getDocs, where, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -143,6 +143,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
     
     setIsImporting(true);
     try {
+      // Precise mapping to system keys
       const stickersToImport: Record<string, number[]> = {
         "KOR Korea Republic": [1,2,4,5,7,9,13,14,15,16,18],
         "CIV Côte d’Ivoire": [2,4,6,10,18,20],
@@ -169,39 +170,44 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
         "COCA-COLA": [1,4,5,7,8,10,11]
       };
 
+      // Ensure we target the document ID that Album.tsx expects (the userId)
       const progressRef = doc(db, 'album_progress', userProfile.userId);
-      const progressSnap = await getDocs(query(collection(db, 'album_progress'), where('userId', '==', userProfile.userId)));
+      const progressDoc = await getDoc(progressRef);
       
       let currentStickers: Record<string, number> = {};
-      if (!progressSnap.empty) {
-        currentStickers = progressSnap.docs[0].data().stickers || {};
+      if (progressDoc.exists()) {
+        currentStickers = progressDoc.data().stickers || {};
       } else {
-        // Create if doesn't exist
-        await setDoc(progressRef, {
-          userId: userProfile.userId,
-          stickers: {},
-          updatedAt: serverTimestamp()
-        });
+        // If it doesn't exist by ID, search by userId field just in case
+        const progressSnap = await getDocs(query(collection(db, 'album_progress'), where('userId', '==', userProfile.userId)));
+        if (!progressSnap.empty) {
+          currentStickers = progressSnap.docs[0].data().stickers || {};
+          // Optional: we could delete the old doc if its ID isn't the userId, 
+          // but for now let's just make sure we establish the primary one.
+        }
       }
 
       const updatedStickers = { ...currentStickers };
+      let newCount = 0;
       
       Object.entries(stickersToImport).forEach(([team, nums]) => {
         nums.forEach(num => {
           const stickerId = `${team}-${num}`;
-          // Set as owned (1) if it wasn't already or wasn't a duplicate
-          if (!updatedStickers[stickerId]) {
+          // Set as owned (1) if it wasn't already owned
+          if (!updatedStickers[stickerId] || updatedStickers[stickerId] === 0) {
             updatedStickers[stickerId] = 1;
+            newCount++;
           }
         });
       });
 
-      await updateDoc(progressRef, {
+      await setDoc(progressRef, {
+        userId: userProfile.userId,
         stickers: updatedStickers,
         updatedAt: serverTimestamp()
-      });
+      }, { merge: true });
 
-      alert('¡Importación completada con éxito!');
+      alert(`¡Importación completada! Se marcaron ${newCount} nuevas figuritas.`);
     } catch (error) {
       console.error(error);
       alert('Error durante la importación: ' + (error instanceof Error ? error.message : String(error)));
