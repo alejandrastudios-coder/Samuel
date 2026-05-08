@@ -305,23 +305,39 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
             </div>
 
             <div className="space-y-6 mb-8">
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">1</div>
-                <p className="text-zinc-200 text-sm leading-relaxed">
-                  Toca el botón de <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Compartir <ShareIcon className="w-3 h-3"/></span> en la parte inferior del navegador.
-                </p>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">2</div>
-                <p className="text-zinc-200 text-sm leading-relaxed">
-                  Desliza hacia arriba y selecciona <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Agregar a Inicio <Plus className="w-3 h-3"/></span>.
-                </p>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">3</div>
-                <p className="text-zinc-200 text-sm leading-relaxed">
-                  Toca <span className="text-white font-bold mx-1">Agregar</span> en la esquina superior derecha.
-                </p>
+              <button 
+                onClick={async () => {
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({
+                        title: 'Stickers 2026',
+                        text: '¡Colecciona las estampas del mundial!',
+                        url: window.location.origin,
+                      });
+                    } catch (err) {
+                      console.log('Error sharing:', err);
+                    }
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-3 text-white text-[11px] uppercase font-black tracking-[0.2em] bg-blue-600 hover:bg-blue-500 py-5 px-5 rounded-3xl transition-all active:scale-95 shadow-xl shadow-blue-600/20"
+              >
+                <ShareIcon className="w-5 h-5 text-white" />
+                <span>PULSA AQUÍ PARA INSTALAR</span>
+              </button>
+
+              <div className="space-y-4 pt-4 border-t border-zinc-800">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">1</div>
+                  <p className="text-zinc-200 text-sm leading-relaxed">
+                    Si el botón de arriba no abre el menú, toca el icono de <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Compartir <ShareIcon className="w-3 h-3"/></span>.
+                  </p>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">2</div>
+                  <p className="text-zinc-200 text-sm leading-relaxed">
+                    Desliza hacia arriba y selecciona <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Agregar a Inicio <Plus className="w-3 h-3"/></span>.
+                  </p>
+                </div>
               </div>
             </div>
 

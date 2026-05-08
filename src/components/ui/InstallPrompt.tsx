@@ -135,10 +135,28 @@ export const InstallPrompt: React.FC = () => {
                 </button>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-zinc-400 text-[10px] uppercase font-black tracking-[0.2em] bg-white/5 py-4 px-5 rounded-2xl border border-white/5">
-                    <Share className="w-4 h-4 text-worldcup-blue" />
-                    <span>Compartir {'>'} Añadir a inicio</span>
-                  </div>
+                  <button 
+                    onClick={async () => {
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: 'Stickers 2026',
+                            text: '¡Colecciona las estampas del mundial!',
+                            url: window.location.origin,
+                          });
+                        } catch (err) {
+                          console.log('Error sharing:', err);
+                        }
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-3 text-white text-[11px] uppercase font-black tracking-[0.2em] bg-worldcup-blue/20 hover:bg-worldcup-blue/30 py-5 px-5 rounded-3xl border border-worldcup-blue/30 transition-all active:scale-95 shadow-lg shadow-worldcup-blue/10"
+                  >
+                    <Share className="w-5 h-5 text-worldcup-blue" />
+                    <span>PULSA AQUÍ PARA COMPARTIR</span>
+                  </button>
+                  <p className="text-[10px] text-zinc-500 text-center font-bold uppercase tracking-widest italic">
+                    Luego selecciona "Añadir a inicio"
+                  </p>
                   <button 
                     onClick={closePrompt}
                     className="w-full py-4 bg-zinc-800 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-zinc-700 active:scale-95 transition-all"
