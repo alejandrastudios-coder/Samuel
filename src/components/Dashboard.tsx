@@ -286,8 +286,20 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3rem] max-w-md w-full relative"
+            className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3rem] max-w-md w-full relative z-[210]"
           >
+            {/* Floating Arrow Guidance */}
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: [0, 15, 0], opacity: 1 }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              className="fixed bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none"
+            >
+              <div className="bg-blue-600 text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest shadow-2xl">
+                Toca aquí abajo
+              </div>
+              <ChevronRight className="w-10 h-10 text-blue-600 rotate-90" />
+            </motion.div>
             <button 
               onClick={() => setIsIOSModalOpen(false)}
               className="absolute top-6 right-6 w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-all active:scale-90 z-20 shadow-lg"
@@ -301,51 +313,71 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 <Smartphone className="w-12 h-12 text-blue-500" />
               </div>
               <h3 className="text-3xl font-black text-white italic uppercase tracking-tight">Instalar en iOS</h3>
-              <p className="text-zinc-400 text-sm mt-3 font-medium">Lleva Stickers 2026 siempre contigo.</p>
+              {window.self !== window.top ? (
+                <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                  <p className="text-amber-500 font-black text-[10px] uppercase tracking-widest">Atención</p>
+                  <p className="text-zinc-400 text-xs mt-1">Estás en vista previa. Toca el icono de "Nuev pestaña" arriba a la derecha para poder instalar.</p>
+                </div>
+              ) : (
+                <p className="text-zinc-400 text-sm mt-3 font-medium">Lleva Stickers 2026 siempre contigo.</p>
+              )}
             </div>
 
-            <div className="space-y-6 mb-8">
-              <button 
-                onClick={async () => {
-                  if (navigator.share) {
-                    try {
-                      await navigator.share({
-                        title: 'Stickers 2026',
-                        text: '¡Colecciona las estampas del mundial!',
-                        url: window.location.origin,
-                      });
-                    } catch (err) {
-                      console.log('Error sharing:', err);
-                    }
-                  }
-                }}
-                className="w-full flex items-center justify-center gap-3 text-white text-[11px] uppercase font-black tracking-[0.2em] bg-blue-600 hover:bg-blue-500 py-5 px-5 rounded-3xl transition-all active:scale-95 shadow-xl shadow-blue-600/20"
-              >
-                <ShareIcon className="w-5 h-5 text-white" />
-                <span>PULSA AQUÍ PARA INSTALAR</span>
-              </button>
+            <div className="space-y-6 mb-8 text-center">
+              <div className="relative p-6 bg-blue-600/10 rounded-[2.5rem] border border-blue-500/20 overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl -mr-16 -mt-16 rounded-full" />
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="w-20 h-20 bg-white rounded-[1.5rem] mb-6 flex items-center justify-center shadow-2xl animate-bounce">
+                    <ShareIcon className="w-10 h-10 text-blue-600" />
+                  </div>
+                  <h4 className="text-white font-black text-lg uppercase tracking-widest leading-none">Paso 1</h4>
+                  <p className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-tight">Toca el icono de Compartir en tu navegador</p>
+                </div>
+              </div>
 
-              <div className="space-y-4 pt-4 border-t border-zinc-800">
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">1</div>
-                  <p className="text-zinc-200 text-sm leading-relaxed">
-                    Si el botón de arriba no abre el menú, toca el icono de <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Compartir <ShareIcon className="w-3 h-3"/></span>.
+              <div className="relative p-6 bg-zinc-800/50 rounded-[2.5rem] border border-white/5">
+                <div className="flex flex-col items-center">
+                  <div className="w-16 h-16 bg-zinc-700 rounded-[1.25rem] mb-6 flex items-center justify-center shadow-xl">
+                    <Plus className="w-8 h-8 text-white" />
+                  </div>
+                  <h4 className="text-zinc-300 font-bold text-sm uppercase tracking-widest leading-none">Paso 2</h4>
+                  <p className="text-white font-black text-md uppercase tracking-widest mt-3 bg-white/5 px-6 py-3 rounded-2xl border border-white/5">
+                    "Añadir a Inicio"
                   </p>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">2</div>
-                  <p className="text-zinc-200 text-sm leading-relaxed">
-                    Desliza hacia arriba y selecciona <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Agregar a Inicio <Plus className="w-3 h-3"/></span>.
-                  </p>
-                </div>
+              </div>
+
+              <div className="pt-4">
+                <button 
+                  onClick={async () => {
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({
+                          title: 'Stickers 2026',
+                          text: '¡Instala la App de Estampas!',
+                          url: window.location.origin,
+                        });
+                      } catch (err) {
+                        console.log('Error sharing:', err);
+                      }
+                    }
+                  }}
+                  className="w-full py-6 bg-blue-600 text-white rounded-[2rem] font-black text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 active:scale-95 transition-all flex items-center justify-center gap-4"
+                >
+                  <ShareIcon className="w-6 h-6" />
+                  ABRIR MENÚ AHORA
+                </button>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic mt-6 px-6 leading-relaxed">
+                  * Esto descargará la App directamente a tu pantalla de inicio sin usar la App Store.
+                </p>
               </div>
             </div>
 
             <button 
               onClick={() => setIsIOSModalOpen(false)}
-              className="w-full py-5 bg-white text-blue-600 font-black uppercase tracking-[0.2em] text-[10px] rounded-3xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
+              className="w-full py-5 bg-zinc-800 text-zinc-400 font-black uppercase tracking-[0.2em] text-[10px] rounded-[2rem] border border-zinc-700 hover:text-white transition-all"
             >
-              ¡ENTENDIDO, VAMOS!
+              CERRAR GUÍA
             </button>
           </motion.div>
         </div>
