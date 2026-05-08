@@ -10,21 +10,21 @@
   "theme_color": "#09090b",
   "icons": [
     {
-      "src": "https://upload.wikimedia.org/wikipedia/en/thumb/4/43/2026_FIFA_World_Cup_logo.svg/192px-2026_FIFA_World_Cup_logo.svg.png",
+      "src": "https://img.freepik.com/premium-photo/golden-world-cup-trophy-stadium-night_662214-3864.jpg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "https://upload.wikimedia.org/wikipedia/en/thumb/4/43/2026_FIFA_World_Cup_logo.svg/512px-2026_FIFA_World_Cup_logo.svg.png",
+      "src": "https://img.freepik.com/premium-photo/golden-world-cup-trophy-stadium-night_662214-3864.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "https://upload.wikimedia.org/wikipedia/en/thumb/4/43/2026_FIFA_World_Cup_logo.svg/1024px-2026_FIFA_World_Cup_logo.svg.png",
+      "src": "https://img.freepik.com/premium-photo/golden-world-cup-trophy-stadium-night_662214-3864.jpg",
       "sizes": "1024x1024",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "maskable"
     }
   ]
