@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, CheckCircle, XCircle, Trash2, Shield, User, 
   Search, Filter, ArrowLeft, LogOut, Plus, Edit2, 
-  X, AlertTriangle, Save 
+  X, AlertTriangle, Save, Database
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -135,6 +135,78 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
   );
 
   const [isCleaning, setIsCleaning] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const importSamuelStickers = async () => {
+    if (!userProfile) return;
+    if (!confirm('¿Deseas registrar las figuritas solicitadas para tu perfil?')) return;
+    
+    setIsImporting(true);
+    try {
+      const stickersToImport: Record<string, number[]> = {
+        "KOR Korea Republic": [1,2,4,5,7,9,13,14,15,16,18],
+        "CIV Côte d’Ivoire": [2,4,6,10,18,20],
+        "EGY Egypt": [1,3,4,7,9,10,11,15],
+        "IRN IR Iran": [3,6,7,9,11,13,14,18,20],
+        "NZL New Zealand": [2,3,4,5,9,11,12,14,15,18],
+        "FRA France": [3,5,6,9,11,14,17,19],
+        "SEN Senegal": [2,6,7,8,10,11,13,16,17,18,20],
+        "IRQ Iraq": [1,2,9,11,13,14,15],
+        "NOR Norway": [1,4,6,9,11,16,18],
+        "ARG Argentina": [2,3,7,8,16,17],
+        "ALG Algeria": [1,2,4,9,10,12,14,15,19],
+        "AUT Austria": [4,5,6,7,8,9,11,15,16,19,20],
+        "JOR Jordan": [2,4,5,10,11,12,17,18,19],
+        "POR Portugal": [3,4,6,11,16],
+        "COD Congo DR": [3,5,6,9,11,12,13,16,18,19],
+        "UZB Uzbekistan": [7,10,12,13,14,15,17,18],
+        "COL Colombia": [1,2,3,4,12,13,14,15,20],
+        "ENG England": [1,2,4,7,8,10,12,19],
+        "CRO Croatia": [1,2,3,4,6,8,11,14,18],
+        "GHA Ghana": [2,3,10,17],
+        "PAN Panama": [1,2,4,7,10,11,15,17]
+      };
+
+      const progressRef = doc(db, 'album_progress', userProfile.userId);
+      const progressSnap = await getDocs(query(collection(db, 'album_progress'), where('userId', '==', userProfile.userId)));
+      
+      let currentStickers: Record<string, number> = {};
+      if (!progressSnap.empty) {
+        currentStickers = progressSnap.docs[0].data().stickers || {};
+      } else {
+        // Create if doesn't exist
+        await setDoc(progressRef, {
+          userId: userProfile.userId,
+          stickers: {},
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      const updatedStickers = { ...currentStickers };
+      
+      Object.entries(stickersToImport).forEach(([team, nums]) => {
+        nums.forEach(num => {
+          const stickerId = `${team}-${num}`;
+          // Set as owned (1) if it wasn't already or wasn't a duplicate
+          if (!updatedStickers[stickerId]) {
+            updatedStickers[stickerId] = 1;
+          }
+        });
+      });
+
+      await updateDoc(progressRef, {
+        stickers: updatedStickers,
+        updatedAt: serverTimestamp()
+      });
+
+      alert('¡Importación completada con éxito!');
+    } catch (error) {
+      console.error(error);
+      alert('Error durante la importación: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const cleanupOrphans = async () => {
     if (!confirm('Esto borrará todos los datos de progreso de usuarios que ya no existen en el sistema. ¿Continuar?')) return;
@@ -175,6 +247,14 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={importSamuelStickers}
+            disabled={isImporting}
+            className="flex items-center gap-2 px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-2xl text-sm font-black transition-all shadow-lg active:scale-95 disabled:opacity-50"
+          >
+            <Database className="w-5 h-5 text-blue-500" />
+            <span className="hidden sm:inline">{isImporting ? 'IMPORTANDO...' : 'IMPORTAR SOLICITUD'}</span>
+          </button>
           <button 
             onClick={cleanupOrphans}
             disabled={isCleaning}
