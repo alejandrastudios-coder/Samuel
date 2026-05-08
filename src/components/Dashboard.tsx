@@ -151,10 +151,11 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     return calculated.sort((a, b) => {
       if (b.rate !== a.rate) return b.rate - a.rate;
       return a.updatedAt.getTime() - b.updatedAt.getTime();
-    }).slice(0, 3);
+    }).slice(0, 10);
   }, [allProgress, allUsers, userProfile, progress, totalPossible]);
 
   const missingCount = totalPossible - ownedCount;
+  const missingRate = Math.round((missingCount / totalPossible) * 100);
   const completionRate = Math.round((ownedCount / totalPossible) * 100);
 
   const teamStats = useMemo(() => {
@@ -255,10 +256,10 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
 
   const stats = [
     { name: 'Completado', value: `${completionRate}%`, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { name: 'Faltantes', value: missingCount, subValue: `${missingRate}%`, icon: Clock, color: 'text-worldcup-red', bg: 'bg-worldcup-red/10' },
     { name: 'En Álbum', value: ownedCount, icon: Star, color: 'text-green-500', bg: 'bg-green-500/10' },
     { name: 'Repetidas', value: repeatedCount, icon: Repeat, color: 'text-amber-500', bg: 'bg-amber-500/10', action: () => setIsRepeatedListOpen(true) },
     { name: 'Intercambios', value: matchesCount, icon: ArrowRightLeft, color: 'text-purple-500', bg: 'bg-purple-500/10', action: () => navigate('/market') },
-    { name: 'Equipos Vacíos', value: teamStats.emptyTeams, icon: BarChart3, color: 'text-zinc-500', bg: 'bg-zinc-500/10' },
     { name: 'Incompletos', value: teamStats.incompleteTeams, icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-500/10' },
   ];
 
@@ -533,6 +534,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 <p className="text-zinc-500 text-xs font-black uppercase tracking-widest mb-1">{stat.name}</p>
                 <div className="flex items-baseline gap-1">
                   <p className="text-3xl font-black text-white italic">{stat.value}</p>
+                  {stat.subValue && <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter">({stat.subValue})</span>}
                   {stat.name === 'Repetidas' && <span className="text-[10px] text-amber-500 font-bold uppercase tracking-tighter">Gold</span>}
                 </div>
               </div>
@@ -548,70 +550,136 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       </div>
 
       {leaderboard.length > 0 && (
-        <section className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3rem] relative overflow-hidden shadow-2xl">
+        <section className="bg-zinc-900 border border-zinc-800 p-6 sm:p-10 rounded-[3rem] relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 blur-[120px] -mr-48 -mt-48 rounded-full" />
           
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
-                <div className="w-1 h-8 bg-amber-500 rounded-full" />
+                <div className="w-1.5 h-10 bg-gradient-to-b from-amber-500 to-amber-800 rounded-full" />
                 <div>
-                  <h3 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none">Podio</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[9px] text-amber-500/80 font-black uppercase tracking-widest border-r border-zinc-800 pr-2">Top 3 Histórico</span>
-                    <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest">{Object.keys(allUsers).length} Miembros en total</span>
+                  <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">Podio Elite</h3>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[10px] text-amber-500/80 font-black uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">Top 10 Global</span>
+                    <span className="text-[10px] text-zinc-500 font-black uppercase tracking-wider">
+                      {Object.keys(allUsers).length} Coleccionistas compitiendo
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2.5">
               {leaderboard.map((item, idx) => (
-                <div 
-                  key={item.userId} 
+                <motion.div 
+                  key={item.userId}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
                   className={cn(
-                    "group relative p-6 rounded-[2rem] border transition-all duration-300",
-                    idx === 0 ? "bg-amber-500/5 border-amber-500/20" : "bg-black/20 border-zinc-800/50"
+                    "relative flex items-center justify-between p-4 sm:p-5 rounded-2xl border transition-all duration-300 group",
+                    idx === 0 ? "bg-amber-500/10 border-amber-500/30 shadow-xl shadow-amber-500/5 ring-1 ring-amber-500/20" :
+                    idx < 3 ? "bg-zinc-800/20 border-zinc-700/50" :
+                    idx < 5 ? "bg-zinc-900/40 border-zinc-800/80" :
+                    "bg-transparent border-zinc-800/40 grayscale group-hover:grayscale-0 group-hover:bg-zinc-800/10"
                   )}
                 >
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="relative">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="relative flex-shrink-0">
                       <div className={cn(
-                        "w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl border transition-transform group-hover:scale-105",
-                        idx === 0 ? "bg-amber-500/10 border-amber-500/20" : "bg-zinc-900 border-zinc-800"
-                      )}>
-                        <Users className={cn("w-6 h-6", idx === 0 ? "text-amber-500" : "text-zinc-600")} />
-                      </div>
-                      <div className={cn(
-                        "absolute -top-2 -right-2 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black italic border shadow-lg",
-                        idx === 0 ? "bg-amber-500 text-black border-amber-400" : 
-                        idx === 1 ? "bg-zinc-700 text-white border-zinc-600" : 
-                        "bg-amber-900 text-amber-200 border-amber-800"
+                        "w-10 h-10 rounded-xl flex items-center justify-center font-black italic shadow-lg border text-sm",
+                        idx === 0 ? "bg-amber-500 text-black border-amber-400 rotate-3" :
+                        idx === 1 ? "bg-zinc-400 text-zinc-900 border-zinc-300" :
+                        idx === 2 ? "bg-amber-700 text-amber-100 border-amber-600" :
+                        "bg-zinc-900 text-zinc-500 border-zinc-800"
                       )}>
                         {idx + 1}
                       </div>
+                      {idx === 0 && (
+                        <div className="absolute -top-3 -left-3 rotate-[-20deg] drop-shadow-lg">
+                          <Trophy className="w-6 h-6 text-amber-400 animate-pulse" />
+                        </div>
+                      )}
                     </div>
-                    
-                    <div className="min-w-0 w-full">
-                      <p className="text-white font-black italic uppercase truncate text-sm px-2">{item.user?.displayName}</p>
-                      <div className="flex items-center justify-center gap-1.5 mt-1">
-                        <Star className={cn("w-3 h-3", idx === 0 ? "text-amber-500" : "text-zinc-600")} />
-                        <span className="text-xl font-black text-worldcup-green italic">{item.rate}%</span>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className={cn(
+                          "font-black uppercase tracking-tight truncate text-sm sm:text-base",
+                          idx === 0 ? "text-white text-lg" : "text-zinc-200"
+                        )}>
+                          {item.user?.displayName}
+                        </p>
+                        {idx === 0 && (
+                          <span className="text-[8px] bg-amber-500 text-black px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter">
+                            LEYENDA
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {idx < 5 ? (
+                          <span className="text-[9px] text-amber-500/70 font-black uppercase tracking-widest italic">
+                            Nivel Elite
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-zinc-600 font-black uppercase tracking-widest italic">
+                            Coleccionista
+                          </span>
+                        )}
+                        <span className="w-1 h-1 rounded-full bg-zinc-800" />
+                        <span className="text-[9px] text-zinc-500 font-medium">#{item.userId.slice(-4)}</span>
                       </div>
                     </div>
                   </div>
-                </div>
+
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-2">
+                      <div className="hidden sm:flex h-1.5 w-24 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700/50">
+                        <div 
+                          className={cn(
+                            "h-full rounded-full transition-all duration-1000",
+                            idx === 0 ? "bg-amber-500" : idx < 3 ? "bg-zinc-400" : "bg-zinc-600"
+                          )} 
+                          style={{ width: `${item.rate}%` }} 
+                        />
+                      </div>
+                      <span className={cn(
+                        "text-xl font-black italic",
+                        idx === 0 ? "text-amber-500 text-2xl" : 
+                        idx < 3 ? "text-zinc-300" : 
+                        "text-zinc-600"
+                      )}>
+                        {item.rate}%
+                      </span>
+                    </div>
+                    {idx < 3 && (
+                      <div className={cn(
+                        "text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full",
+                        idx === 0 ? "bg-amber-500/20 text-amber-500" :
+                        idx === 1 ? "bg-zinc-100/10 text-zinc-300" :
+                        "bg-amber-900/20 text-amber-600"
+                      )}>
+                        {idx === 0 ? "Oro" : idx === 1 ? "Plata" : "Bronce"}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
               ))}
             </div>
 
-            <div className="mt-8 p-6 bg-black/40 rounded-[2rem] border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-zinc-400 font-medium text-center sm:text-left">
-                Cada estampa conseguida o intercambiada te acerca al salón de la fama. <br/>
-                <span className="text-zinc-500 text-xs">¡Sigue coleccionando y podrías ser tú quien lidere el próximo podio!</span>
-              </p>
+            <div className="mt-8 p-6 bg-black/40 rounded-[2.5rem] border border-zinc-800/50 flex flex-col sm:flex-row items-center justify-between gap-6 transition-all hover:bg-black/60">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shrink-0">
+                  <Star className="w-6 h-6 text-amber-500" />
+                </div>
+                <div className="text-center sm:text-left">
+                  <p className="text-sm text-white font-black uppercase tracking-tight">¡Sigue escalando!</p>
+                  <p className="text-zinc-500 text-xs font-medium">Estás compitiendo contra {Object.keys(allUsers).length} coleccionistas activos.</p>
+                </div>
+              </div>
               <button 
                 onClick={() => navigate('/market')}
-                className="px-6 py-3 bg-worldcup-green text-black font-black uppercase tracking-widest text-[10px] rounded-full shadow-lg shadow-worldcup-green/20 hover:scale-105 active:scale-95 transition-all"
+                className="w-full sm:w-auto px-8 py-3.5 bg-worldcup-green text-black font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-xl shadow-worldcup-green/20 hover:scale-105 active:scale-95 transition-all"
               >
                 Buscar Intercambios
               </button>
@@ -638,7 +706,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] block">Faltantes</span>
-                  <span className="text-2xl font-black text-zinc-300 italic tracking-tighter leading-none">{missingCount}</span>
+                  <span className="text-5xl font-black text-worldcup-red italic tracking-tighter leading-none">{missingCount}</span>
                 </div>
               </div>
               
