@@ -18,6 +18,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const [showiOSInstall, setShowiOSInstall] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isRepeatedListOpen, setIsRepeatedListOpen] = useState(false);
+  const [isIOSModalOpen, setIsIOSModalOpen] = useState(false);
 
   useEffect(() => {
     if (!userProfile) return;
@@ -267,10 +268,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               </div>
             </div>
             <button 
-              onClick={() => {
-                const modal = document.getElementById('ios-install-modal');
-                if (modal) modal.classList.remove('hidden');
-              }}
+              onClick={() => setIsIOSModalOpen(true)}
               className="px-6 py-2 bg-white text-blue-600 font-extrabold text-[10px] uppercase tracking-widest rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all"
             >
               Cómo Instalar
@@ -280,56 +278,58 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       )}
 
       {/* iOS Installation Instructions Modal */}
-      <div id="ios-install-modal" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          whileInView={{ scale: 1, opacity: 1 }}
-          className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3rem] max-w-md w-full relative"
-        >
-          <button 
-            onClick={() => document.getElementById('ios-install-modal')?.classList.add('hidden')}
-            className="absolute top-6 right-6 w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+      {isIOSModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3rem] max-w-md w-full relative"
           >
-            <span className="text-2xl font-light">×</span>
-          </button>
-          
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-blue-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
-              <Smartphone className="w-10 h-10 text-blue-500" />
+            <button 
+              onClick={() => setIsIOSModalOpen(false)}
+              className="absolute top-6 right-6 w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+            >
+              <span className="text-2xl font-light">×</span>
+            </button>
+            
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-blue-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+                <Smartphone className="w-10 h-10 text-blue-500" />
+              </div>
+              <h3 className="text-2xl font-black text-white italic uppercase">Instalar en iOS</h3>
+              <p className="text-zinc-400 text-sm mt-2">Sigue estos pasos para instalar Stickers 2026 en tu iPhone.</p>
             </div>
-            <h3 className="text-2xl font-black text-white italic uppercase">Instalar en iOS</h3>
-            <p className="text-zinc-400 text-sm mt-2">Sigue estos pasos para instalar Stickers 2026 en tu iPhone.</p>
-          </div>
 
-          <div className="space-y-6 mb-8">
-            <div className="flex items-start gap-4">
-              <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">1</div>
-              <p className="text-zinc-200 text-sm leading-relaxed">
-                Toca el botón de <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Compartir <ShareIcon className="w-3 h-3"/></span> en la parte inferior del navegador.
-              </p>
+            <div className="space-y-6 mb-8">
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">1</div>
+                <p className="text-zinc-200 text-sm leading-relaxed">
+                  Toca el botón de <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Compartir <ShareIcon className="w-3 h-3"/></span> en la parte inferior del navegador.
+                </p>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">2</div>
+                <p className="text-zinc-200 text-sm leading-relaxed">
+                  Desliza hacia arriba y selecciona <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Agregar a Inicio <Plus className="w-3 h-3"/></span>.
+                </p>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">3</div>
+                <p className="text-zinc-200 text-sm leading-relaxed">
+                  Toca <span className="text-white font-bold mx-1">Agregar</span> en la esquina superior derecha.
+                </p>
+              </div>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">2</div>
-              <p className="text-zinc-200 text-sm leading-relaxed">
-                Desliza hacia arriba y selecciona <span className="text-white font-bold inline-flex items-center gap-1 mx-1 px-2 py-0.5 bg-zinc-800 rounded">Agregar a Inicio <Plus className="w-3 h-3"/></span>.
-              </p>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center font-black text-blue-500 shrink-0">3</div>
-              <p className="text-zinc-200 text-sm leading-relaxed">
-                Toca <span className="text-white font-bold mx-1">Agregar</span> en la esquina superior derecha.
-              </p>
-            </div>
-          </div>
 
-          <button 
-            onClick={() => document.getElementById('ios-install-modal')?.classList.add('hidden')}
-            className="w-full py-4 bg-zinc-800 text-white font-black uppercase tracking-widest text-xs rounded-2xl border border-zinc-700 hover:bg-zinc-700 transition-colors"
-          >
-            Entendido
-          </button>
-        </motion.div>
-      </div>
+            <button 
+              onClick={() => setIsIOSModalOpen(false)}
+              className="w-full py-4 bg-zinc-800 text-white font-black uppercase tracking-widest text-xs rounded-2xl border border-zinc-700 hover:bg-zinc-700 transition-colors"
+            >
+              Entendido
+            </button>
+          </motion.div>
+        </div>
+      )}
 
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden p-8 rounded-[2.5rem] bg-zinc-900 border border-zinc-800 shadow-2xl">
         <div className="absolute top-0 right-0 w-64 h-64 bg-worldcup-green/5 blur-[100px] -mr-32 -mt-32 rounded-full" />
