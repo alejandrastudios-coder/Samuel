@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, collection } from 'firebase/firestore';
+import { doc, onSnapshot, collection, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId } from '../constants';
@@ -250,6 +250,49 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Self-healing for Samuel admin role or quick access */}
+      {userProfile?.username.toLowerCase().trim() === 'samuel' && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-zinc-900 border-2 border-green-500/30 p-6 rounded-[2.5rem] flex flex-col sm:flex-row items-center justify-between gap-4"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-green-500/10 rounded-2xl flex items-center justify-center">
+              <ShieldCheck className="w-6 h-6 text-green-500" />
+            </div>
+            <div>
+              <h4 className="text-white font-black uppercase tracking-tight">Acceso de Administrador</h4>
+              <p className="text-zinc-500 text-xs font-medium">Samuel, tienes acceso total al sistema.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => navigate('/admin')}
+              className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all active:scale-95 border border-zinc-700"
+            >
+              IR AL PANEL CONTROL
+            </button>
+            {userProfile.role !== 'admin' && (
+              <button 
+                onClick={async () => {
+                  try {
+                    await updateDoc(doc(db, 'users', userProfile.userId), { role: 'admin', status: 'approved' });
+                    alert('Rol de administrador restaurado. Por favor recarga la página.');
+                    window.location.reload();
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="px-6 py-3 bg-green-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95"
+              >
+                RESTAURAR ROL
+              </button>
+            )}
+          </div>
+        </motion.div>
+      )}
+
       {showiOSInstall && (
         <motion.div 
           initial={{ opacity: 0, y: -20 }}

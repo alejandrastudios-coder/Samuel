@@ -246,29 +246,29 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
             <p className="text-zinc-500 font-medium">Administra accesos, identidades y roles.</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <button 
             onClick={importSamuelStickers}
             disabled={isImporting}
-            className="flex items-center gap-2 px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-2xl text-sm font-black transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700"
           >
-            <Database className="w-5 h-5 text-blue-500" />
-            <span className="hidden sm:inline">{isImporting ? 'IMPORTANDO...' : 'IMPORTAR SOLICITUD'}</span>
+            <Database className="w-4 h-4 text-blue-500" />
+            <span>{isImporting ? 'IMPORTANDO...' : 'IMPORTAR SOLICITUD'}</span>
           </button>
           <button 
             onClick={cleanupOrphans}
             disabled={isCleaning}
-            className="flex items-center gap-2 px-5 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-2xl text-sm font-black transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700"
           >
-            <Shield className="w-5 h-5 text-purple-500" />
-            <span className="hidden sm:inline">{isCleaning ? 'LIMPIANDO...' : 'LIMPIAR HUÉRFANOS'}</span>
+            <Shield className="w-4 h-4 text-purple-500" />
+            <span>{isCleaning ? 'LIMPIANDO...' : 'LIMPIAR HUÉRFANOS'}</span>
           </button>
           <button 
             onClick={() => { resetForm(); setIsModalOpen(true); }}
-            className="flex items-center gap-2 px-5 py-3 bg-green-600 hover:bg-green-500 text-white rounded-2xl text-sm font-black transition-all shadow-lg active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95"
           >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">NUEVO USUARIO</span>
+            <Plus className="w-4 h-4" />
+            <span>NUEVO</span>
           </button>
         </div>
       </header>
