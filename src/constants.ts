@@ -12,6 +12,7 @@ export const COCA_COLA_COUNT = 12;
 export const STICKERS_PER_TEAM = 20;
 
 export const RARITIES = [
+  { id: 'cualquier', name: 'Cualquier color', label: 'Predeterminado', color: 'bg-gradient-to-tr from-zinc-500 via-zinc-200 to-zinc-500', text: 'text-zinc-900', border: 'border-zinc-400' },
   { id: 'blanco', name: 'Blanco', label: 'Común', color: 'bg-white', text: 'text-zinc-900', border: 'border-zinc-200' },
   { id: 'azul', name: 'Azul', label: 'Raro', color: 'bg-blue-500', text: 'text-white', border: 'border-blue-400' },
   { id: 'morado', name: 'Morado', label: 'Épico', color: 'bg-purple-600', text: 'text-white', border: 'border-purple-400' },

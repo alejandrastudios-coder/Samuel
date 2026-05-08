@@ -21,7 +21,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const [isIOSModalOpen, setIsIOSModalOpen] = useState(false);
   const [isRarityModalOpen, setIsRarityModalOpen] = useState(false);
 
-  const currentRarity = userProfile?.rarity || 'blanco';
+  const currentRarity = userProfile?.rarity || 'cualquier';
   const rarityData = RARITIES.find(r => r.id === currentRarity) || RARITIES[0];
 
   const updateRarity = async (rarityId: string) => {
@@ -174,6 +174,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const teamStats = useMemo(() => {
     let emptyTeams = 0;
     let incompleteTeams = 0;
+    let fullTeams = 0;
     
     TEAMS.forEach((team) => {
       let teamOwned = 0;
@@ -188,10 +189,12 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         emptyTeams++;
       } else if (teamOwned < STICKERS_PER_TEAM) {
         incompleteTeams++;
+      } else {
+        fullTeams++;
       }
     });
 
-    return { emptyTeams, incompleteTeams };
+    return { emptyTeams, incompleteTeams, fullTeams };
   }, [normalizedMyStickers]);
 
   useEffect(() => {
@@ -268,12 +271,25 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   }, [progress, allProgress, allUsers, normalizedMyStickers]);
 
   const stats = [
-    { name: 'Completado', value: `${completionRate}%`, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { 
+      name: 'Completado', 
+      value: `${completionRate}%`, 
+      subValue: `${ownedCount} / ${totalPossible} Figuras`,
+      icon: Trophy, 
+      color: 'text-amber-500', 
+      bg: 'bg-amber-500/10' 
+    },
     { name: 'Faltantes', value: missingCount, subValue: `${missingRate}%`, icon: Clock, color: 'text-worldcup-red', bg: 'bg-worldcup-red/10' },
-    { name: 'En Álbum', value: ownedCount, icon: Star, color: 'text-green-500', bg: 'bg-green-500/10' },
     { name: 'Repetidas', value: repeatedCount, icon: Repeat, color: 'text-amber-500', bg: 'bg-amber-500/10', action: () => setIsRepeatedListOpen(true) },
     { name: 'Intercambios', value: matchesCount, icon: ArrowRightLeft, color: 'text-purple-500', bg: 'bg-purple-500/10', action: () => navigate('/market') },
-    { name: 'Incompletos', value: teamStats.incompleteTeams, icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { 
+      name: 'Incompletos', 
+      value: teamStats.incompleteTeams, 
+      subValue: `Vacíos: ${teamStats.emptyTeams} | Llenos: ${teamStats.fullTeams}`, 
+      icon: TrendingUp, 
+      color: 'text-blue-500', 
+      bg: 'bg-blue-500/10' 
+    },
   ];
 
   return (

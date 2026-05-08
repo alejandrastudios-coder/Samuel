@@ -13,7 +13,7 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [selectedRarity, setSelectedRarity] = useState('blanco');
+  const [selectedRarity, setSelectedRarity] = useState('cualquier');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();

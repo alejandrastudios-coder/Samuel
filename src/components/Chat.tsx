@@ -401,13 +401,13 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                    {(tradeInfo.iNeed.length > 0 || tradeInfo.theyNeed.length > 0) && (
                      <button 
                        onClick={async () => {
-                         const userRarity = userProfile?.rarity || 'blanco';
+                         const userRarity = userProfile?.rarity || 'cualquier';
                          const rarityData = RARITIES.find(r => r.id === userRarity);
-                         const userRarityName = rarityData ? rarityData.name : 'Blanco';
+                         const userRarityName = rarityData ? rarityData.name : 'Cualquier color';
 
-                         const peerRarity = peerUser?.rarity || 'blanco';
+                         const peerRarity = peerUser?.rarity || 'cualquier';
                          const rData = RARITIES.find(r => r.id === peerRarity);
-                         const peerRarityName = rData ? rData.name : 'Blanco';
+                         const peerRarityName = rData ? rData.name : 'Cualquier color';
 
                          let t = `¡Hola! He revisado nuestras coincidencias.\n\nYo estoy coleccionando el álbum en rareza ${userRarityName.toUpperCase()}.\n¿Tú también lo haces en rareza ${peerRarityName.toUpperCase()}?\n\n`;
                          if (tradeInfo.theyNeed.length > 0) {
