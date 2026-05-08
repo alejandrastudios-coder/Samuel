@@ -133,16 +133,31 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     const calculated = allStats.map(item => {
       const s = item.progress?.stickers || {};
       const counts: Record<string, number> = {};
+      
+      let fwcOwned = 0;
+      let ccOwned = 0;
+
       Object.entries(s).forEach(([id, qty]) => {
+        if (qty <= 0) return;
         const norm = normalizeStickerId(id);
-        counts[norm] = Math.max(counts[norm] || 0, qty);
+        
+        if (!counts[norm]) {
+          counts[norm] = qty;
+          if (norm.startsWith('FWC')) fwcOwned++;
+          else if (norm.startsWith('CC')) ccOwned++;
+        }
       });
+
       const owned = Object.values(counts).filter(v => v >= 1).length;
       const rate = Math.round((owned / totalPossible) * 100);
+      
       return {
         userId: item.userId,
         user: item.user,
         rate,
+        owned,
+        fwcOwned,
+        ccOwned,
         updatedAt: item.progress?.updatedAt?.toDate?.() || new Date(0)
       };
     });
@@ -569,7 +584,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               </div>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {leaderboard.map((item, idx) => (
                 <motion.div 
                   key={item.userId}
@@ -577,27 +592,27 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   className={cn(
-                    "relative flex items-center justify-between p-4 sm:p-5 rounded-2xl border transition-all duration-300 group",
-                    idx === 0 ? "bg-amber-500/10 border-amber-500/30 shadow-xl shadow-amber-500/5 ring-1 ring-amber-500/20" :
-                    idx < 3 ? "bg-zinc-800/20 border-zinc-700/50" :
-                    idx < 5 ? "bg-zinc-900/40 border-zinc-800/80" :
+                    "relative flex items-center justify-between p-4 sm:p-5 rounded-[2.5rem] border transition-all duration-500 group",
+                    idx === 0 ? "bg-gradient-to-r from-amber-500/15 to-transparent border-amber-500/40 shadow-2xl shadow-amber-500/10 ring-1 ring-amber-400/20" :
+                    idx === 1 ? "bg-gradient-to-r from-zinc-400/10 to-transparent border-zinc-400/30" :
+                    idx === 2 ? "bg-gradient-to-r from-amber-800/10 to-transparent border-amber-800/30" :
                     "bg-transparent border-zinc-800/40 grayscale group-hover:grayscale-0 group-hover:bg-zinc-800/10"
                   )}
                 >
                   <div className="flex items-center gap-4 min-w-0">
                     <div className="relative flex-shrink-0">
                       <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center font-black italic shadow-lg border text-sm",
-                        idx === 0 ? "bg-amber-500 text-black border-amber-400 rotate-3" :
-                        idx === 1 ? "bg-zinc-400 text-zinc-900 border-zinc-300" :
-                        idx === 2 ? "bg-amber-700 text-amber-100 border-amber-600" :
+                        "w-12 h-12 rounded-full flex items-center justify-center font-black italic shadow-lg border text-base transition-transform group-hover:scale-110",
+                        idx === 0 ? "bg-gradient-to-tr from-amber-400 to-amber-600 text-black border-amber-300 scale-110 shadow-amber-500/20 shadow-[0_0_20px_rgba(251,191,36,0.2)]" :
+                        idx === 1 ? "bg-gradient-to-tr from-zinc-300 to-zinc-500 text-zinc-950 border-zinc-200" :
+                        idx === 2 ? "bg-gradient-to-tr from-amber-700 to-amber-900 text-amber-100 border-amber-600" :
                         "bg-zinc-900 text-zinc-500 border-zinc-800"
                       )}>
                         {idx + 1}
                       </div>
                       {idx === 0 && (
-                        <div className="absolute -top-3 -left-3 rotate-[-20deg] drop-shadow-lg">
-                          <Trophy className="w-6 h-6 text-amber-400 animate-pulse" />
+                        <div className="absolute -top-4 -left-4 rotate-[-20deg] drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]">
+                          <Trophy className="w-8 h-8 text-amber-400 animate-pulse" />
                         </div>
                       )}
                     </div>
@@ -605,48 +620,45 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className={cn(
-                          "font-black uppercase tracking-tight truncate text-sm sm:text-base",
-                          idx === 0 ? "text-white text-lg" : "text-zinc-200"
+                          "font-black uppercase tracking-tight truncate",
+                          idx === 0 ? "text-white text-lg sm:text-xl" : "text-zinc-200 text-sm sm:text-base"
                         )}>
                           {item.user?.displayName}
                         </p>
                         {idx === 0 && (
-                          <span className="text-[8px] bg-amber-500 text-black px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter">
-                            LEYENDA
-                          </span>
+                          <div className="flex items-center gap-1 bg-amber-500 text-black px-2 py-0.5 rounded-full shadow-lg">
+                            <Star className="w-2.5 h-2.5 fill-current" />
+                            <span className="text-[8px] font-black uppercase tracking-tighter">LEYENDA</span>
+                          </div>
                         )}
+                        {idx === 1 && <span className="text-[7px] border border-zinc-400/50 text-zinc-400 px-1.5 py-0.5 rounded-full font-black uppercase">Elite</span>}
+                        {idx === 2 && <span className="text-[7px] border border-amber-800/50 text-amber-600 px-1.5 py-0.5 rounded-full font-black uppercase">Pro</span>}
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        {idx < 5 ? (
-                          <span className="text-[9px] text-amber-500/70 font-black uppercase tracking-widest italic">
-                            Nivel Elite
-                          </span>
-                        ) : (
-                          <span className="text-[9px] text-zinc-600 font-black uppercase tracking-widest italic">
-                            Coleccionista
-                          </span>
-                        )}
-                        <span className="w-1 h-1 rounded-full bg-zinc-800" />
-                        <span className="text-[9px] text-zinc-500 font-medium">#{item.userId.slice(-4)}</span>
+                      
+                      {/* Color-coded Minimalist KPIs with Labels */}
+                      <div className="flex items-center gap-2 sm:gap-3 mt-1.5 flex-wrap">
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/40 border border-white/5 shadow-sm">
+                          <span className="text-[7px] text-zinc-500 font-black uppercase tracking-tighter">Total</span>
+                          <span className="text-[9px] text-zinc-200 font-bold">{item.owned}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-worldcup-green/5 border border-worldcup-green/10 shadow-sm shadow-worldcup-green/5">
+                          <span className="text-[7px] text-worldcup-green/70 font-black uppercase tracking-tighter text-shadow-glow">FWC</span>
+                          <span className="text-[9px] text-worldcup-green font-bold">{item.fwcOwned}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-worldcup-red/5 border border-worldcup-red/10 shadow-sm shadow-worldcup-red/5">
+                          <span className="text-[7px] text-worldcup-red/70 font-black uppercase tracking-tighter text-shadow-glow">Coca</span>
+                          <span className="text-[9px] text-worldcup-red font-bold">{item.ccOwned}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 px-2">
                     <div className="flex items-center gap-2">
-                      <div className="hidden sm:flex h-1.5 w-24 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700/50">
-                        <div 
-                          className={cn(
-                            "h-full rounded-full transition-all duration-1000",
-                            idx === 0 ? "bg-amber-500" : idx < 3 ? "bg-zinc-400" : "bg-zinc-600"
-                          )} 
-                          style={{ width: `${item.rate}%` }} 
-                        />
-                      </div>
                       <span className={cn(
-                        "text-xl font-black italic",
-                        idx === 0 ? "text-amber-500 text-2xl" : 
-                        idx < 3 ? "text-zinc-300" : 
+                        "text-xl font-black italic tabular-nums transition-all",
+                        idx === 0 ? "text-amber-500 text-3xl drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]" : 
+                        idx < 3 ? "text-zinc-100 text-xl" : 
                         "text-zinc-600"
                       )}>
                         {item.rate}%
@@ -654,10 +666,10 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                     </div>
                     {idx < 3 && (
                       <div className={cn(
-                        "text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full",
-                        idx === 0 ? "bg-amber-500/20 text-amber-500" :
-                        idx === 1 ? "bg-zinc-100/10 text-zinc-300" :
-                        "bg-amber-900/20 text-amber-600"
+                        "text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-0.5 rounded-full border shadow-sm transition-colors",
+                        idx === 0 ? "bg-amber-500/20 text-amber-500 border-amber-500/30" :
+                        idx === 1 ? "bg-zinc-100/10 text-zinc-300 border-zinc-100/20" :
+                        "bg-amber-900/20 text-amber-600 border-amber-900/30"
                       )}>
                         {idx === 0 ? "Oro" : idx === 1 ? "Plata" : "Bronce"}
                       </div>
