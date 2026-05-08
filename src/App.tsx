@@ -115,10 +115,10 @@ function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, o
           {isInstallable && (
             <button 
               onClick={triggerInstall}
-              className="hidden sm:flex items-center gap-2 px-3 py-2 bg-green-600/10 text-green-500 rounded-xl font-bold hover:bg-green-600/20 transition-all border border-green-500/20"
+              className="flex items-center gap-2 px-3 py-2 bg-green-600/10 text-green-500 rounded-xl font-bold hover:bg-green-600/20 transition-all border border-green-500/20"
             >
               <Download className="w-4 h-4" />
-              <span className="text-[10px] uppercase tracking-wider">Instalar</span>
+              <span className="text-[10px] uppercase tracking-wider hidden xs:inline">Instalar</span>
             </button>
           )}
           <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-1.5 md:px-3 md:py-2">

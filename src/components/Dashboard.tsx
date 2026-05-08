@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId } from '../constants';
 import { motion } from 'motion/react';
-import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus } from 'lucide-react';
+import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RepeatedList } from './RepeatedList';
@@ -254,7 +254,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden"
+          className="relative z-[60] bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-[2.5rem] shadow-2xl overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 rounded-full" />
           <div className="flex items-center justify-between gap-4 relative z-10">
@@ -268,10 +268,13 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               </div>
             </div>
             <button 
-              onClick={() => setIsIOSModalOpen(true)}
-              className="px-6 py-2 bg-white text-blue-600 font-extrabold text-[10px] uppercase tracking-widest rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsIOSModalOpen(true);
+              }}
+              className="relative z-[70] px-6 py-3 bg-white text-blue-600 font-black text-[11px] uppercase tracking-widest rounded-full shadow-2xl active:scale-95 transition-all cursor-pointer ring-4 ring-white/30"
             >
-              Cómo Instalar
+              INSTALAR AHORA
             </button>
           </div>
         </motion.div>
@@ -287,17 +290,18 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           >
             <button 
               onClick={() => setIsIOSModalOpen(false)}
-              className="absolute top-6 right-6 w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+              className="absolute top-6 right-6 w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-all active:scale-90 z-20 shadow-lg"
+              aria-label="Cerrar"
             >
-              <span className="text-2xl font-light">×</span>
+              <X className="w-6 h-6" />
             </button>
             
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-blue-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
-                <Smartphone className="w-10 h-10 text-blue-500" />
+            <div className="text-center mb-10">
+              <div className="w-24 h-24 bg-blue-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border border-blue-500/20 shadow-xl shadow-blue-500/5">
+                <Smartphone className="w-12 h-12 text-blue-500" />
               </div>
-              <h3 className="text-2xl font-black text-white italic uppercase">Instalar en iOS</h3>
-              <p className="text-zinc-400 text-sm mt-2">Sigue estos pasos para instalar Stickers 2026 en tu iPhone.</p>
+              <h3 className="text-3xl font-black text-white italic uppercase tracking-tight">Instalar en iOS</h3>
+              <p className="text-zinc-400 text-sm mt-3 font-medium">Lleva Stickers 2026 siempre contigo.</p>
             </div>
 
             <div className="space-y-6 mb-8">
@@ -323,9 +327,9 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
 
             <button 
               onClick={() => setIsIOSModalOpen(false)}
-              className="w-full py-4 bg-zinc-800 text-white font-black uppercase tracking-widest text-xs rounded-2xl border border-zinc-700 hover:bg-zinc-700 transition-colors"
+              className="w-full py-5 bg-white text-blue-600 font-black uppercase tracking-[0.2em] text-[10px] rounded-3xl shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
             >
-              Entendido
+              ¡ENTENDIDO, VAMOS!
             </button>
           </motion.div>
         </div>
