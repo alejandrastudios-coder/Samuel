@@ -114,41 +114,39 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   }, [normalizedMyStickers]);
 
   const leaderboard = useMemo(() => {
-    if (allProgress.length === 0) return [];
-    
-    // Include current user in the comparison
-    const allStats = [
-      { 
-        userId: userProfile?.userId, 
-        progress, 
-        user: userProfile 
-      },
-      ...allProgress.map(p => ({ 
-        userId: p.userId, 
-        progress: p, 
-        user: allUsers[p.userId] 
-      }))
-    ].filter(item => item.user && item.user.status === 'approved');
+    // Combine all available users with their corresponding progress
+    const allStats = Object.keys(allUsers).map(uId => {
+      const user = allUsers[uId];
+      // Prefer local progress state for current user for immediate feedback
+      const userProgress = uId === userProfile?.userId ? progress : allProgress.find(p => p.userId === uId);
+      
+      return {
+        userId: uId,
+        user,
+        progress: userProgress
+      };
+    }).filter(item => item.user && item.user.status === 'approved');
 
     const calculated = allStats.map(item => {
       const s = item.progress?.stickers || {};
-      const counts: Record<string, number> = {};
-      
-      let fwcOwned = 0;
-      let ccOwned = 0;
+      const uniqueFWC = new Set<string>();
+      const uniqueCC = new Set<string>();
+      const uniqueStandard = new Set<string>();
 
       Object.entries(s).forEach(([id, qty]) => {
         if (qty <= 0) return;
         const norm = normalizeStickerId(id);
         
-        if (!counts[norm]) {
-          counts[norm] = qty;
-          if (norm.startsWith('FWC')) fwcOwned++;
-          else if (norm.startsWith('CC')) ccOwned++;
+        if (norm.startsWith('UFW') || norm.startsWith('FWC')) {
+          uniqueFWC.add(norm);
+        } else if (norm.startsWith('COCA-COLA') || norm.startsWith('CC')) {
+          uniqueCC.add(norm);
+        } else {
+          uniqueStandard.add(norm);
         }
       });
 
-      const owned = Object.values(counts).filter(v => v >= 1).length;
+      const owned = uniqueFWC.size + uniqueCC.size + uniqueStandard.size;
       const rate = Math.round((owned / totalPossible) * 100);
       
       return {
@@ -156,8 +154,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         user: item.user,
         rate,
         owned,
-        fwcOwned,
-        ccOwned,
+        fwcOwned: uniqueFWC.size,
+        ccOwned: uniqueCC.size,
         updatedAt: item.progress?.updatedAt?.toDate?.() || new Date(0)
       };
     });
@@ -592,14 +590,20 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   className={cn(
-                    "relative flex items-center justify-between p-4 sm:p-5 rounded-[2.5rem] border transition-all duration-500 group",
-                    idx === 0 ? "bg-gradient-to-r from-amber-500/15 to-transparent border-amber-500/40 shadow-2xl shadow-amber-500/10 ring-1 ring-amber-400/20" :
-                    idx === 1 ? "bg-gradient-to-r from-zinc-400/10 to-transparent border-zinc-400/30" :
-                    idx === 2 ? "bg-gradient-to-r from-amber-800/10 to-transparent border-amber-800/30" :
-                    "bg-transparent border-zinc-800/40 grayscale group-hover:grayscale-0 group-hover:bg-zinc-800/10"
+                    "relative flex items-center justify-between p-4 sm:p-5 rounded-full border transition-all duration-500 group overflow-hidden",
+                    idx === 0 ? "bg-gradient-to-r from-amber-500/20 via-amber-500/5 to-transparent border-amber-500/50 shadow-[0_0_40px_rgba(251,191,36,0.15)] ring-1 ring-amber-400/30 ml-4 border-l-[6px]" :
+                    idx === 1 ? "bg-gradient-to-r from-zinc-400/15 via-zinc-400/5 to-transparent border-zinc-400/40 ml-2 border-l-4" :
+                    idx === 2 ? "bg-gradient-to-r from-amber-800/15 via-amber-800/5 to-transparent border-amber-800/40 ml-1 border-l-4" :
+                    "bg-transparent border-zinc-800/40 grayscale group-hover:grayscale-0 group-hover:bg-zinc-800/10 hover:border-zinc-700/60"
                   )}
                 >
-                  <div className="flex items-center gap-4 min-w-0">
+                  {idx < 3 && (
+                    <div className={cn(
+                      "absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from),_transparent)]",
+                      idx === 0 ? "from-amber-500" : idx === 1 ? "from-zinc-400" : "from-amber-800"
+                    )} />
+                  )}
+                  <div className="flex items-center gap-4 min-w-0 relative z-10">
                     <div className="relative flex-shrink-0">
                       <div className={cn(
                         "w-12 h-12 rounded-full flex items-center justify-center font-black italic shadow-lg border text-base transition-transform group-hover:scale-110",
