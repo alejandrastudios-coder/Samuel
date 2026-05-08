@@ -331,7 +331,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                     <ShareIcon className="w-10 h-10 text-blue-600" />
                   </div>
                   <h4 className="text-white font-black text-lg uppercase tracking-widest leading-none">Paso 1</h4>
-                  <p className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-tight">Toca el icono de Compartir en tu navegador</p>
+                  <p className="text-blue-400 text-[10px] font-black mt-3 uppercase tracking-widest underline">¡Usa Navegador Safari!</p>
+                  <p className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-tight">Toca el icono de Compartir en la barra de Safari</p>
                 </div>
               </div>
 
@@ -341,9 +342,11 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                     <Plus className="w-8 h-8 text-white" />
                   </div>
                   <h4 className="text-zinc-300 font-bold text-sm uppercase tracking-widest leading-none">Paso 2</h4>
+                  <p className="text-zinc-500 text-[10px] uppercase font-bold mt-2">Baja en el menú y busca:</p>
                   <p className="text-white font-black text-md uppercase tracking-widest mt-3 bg-white/5 px-6 py-3 rounded-2xl border border-white/5">
                     "Añadir a Inicio"
                   </p>
+                  <p className="text-zinc-500 text-[9px] mt-4 font-bold uppercase italic">¿No lo ves? Desliza el menú hacia arriba</p>
                 </div>
               </div>
 

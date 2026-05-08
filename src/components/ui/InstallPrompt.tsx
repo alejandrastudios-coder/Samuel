@@ -154,9 +154,9 @@ export const InstallPrompt: React.FC = () => {
                         <Share className="w-8 h-8 text-blue-600" />
                       </div>
                       <p className="text-white font-black text-sm uppercase tracking-widest leading-relaxed">
-                        1. TOCA EL BOTÓN <span className="text-blue-400">COMPARTIR</span>
+                        1. USA <span className="text-blue-400 underline">SAFARI</span>
                       </p>
-                      <p className="text-zinc-400 text-[10px] font-bold mt-1">EN LA BARRA DE TU NAVEGADOR</p>
+                      <p className="text-zinc-400 text-[10px] font-bold mt-1 uppercase">Solo funciona en el navegador Safari</p>
                     </div>
                   </div>
 
@@ -165,12 +165,14 @@ export const InstallPrompt: React.FC = () => {
                       <div className="w-12 h-12 bg-zinc-700 rounded-xl mb-4 flex items-center justify-center shadow-xl">
                         <Plus className="w-6 h-6 text-white" />
                       </div>
+                      <p className="text-blue-400 font-black text-[10px] uppercase tracking-widest mb-2">Bajo el icono compartir:</p>
                       <p className="text-zinc-200 font-bold text-xs uppercase tracking-[0.1em]">
-                        2. LUEGO SELECCIONA:
+                        2. BAJA Y SELECCIONA:
                       </p>
                       <p className="text-white font-black text-sm uppercase tracking-widest mt-1 bg-white/5 px-4 py-2 rounded-xl border border-white/5 mt-2">
                         "AÑADIR A INICIO"
                       </p>
+                      <p className="text-zinc-500 text-[9px] mt-2 font-bold uppercase">Si no lo ves, desliza hacia abajo en el menú</p>
                     </div>
                   </div>
 
