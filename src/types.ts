@@ -8,6 +8,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL?: string;
+  rarity?: string;
   status: UserStatus;
   role: UserRole;
   createdAt: any;

@@ -11,6 +11,13 @@ export const FWC_COUNT = 19;
 export const COCA_COLA_COUNT = 12;
 export const STICKERS_PER_TEAM = 20;
 
+export const RARITIES = [
+  { id: 'blanco', name: 'Blanco', label: 'Común', color: 'bg-white', text: 'text-zinc-900', border: 'border-zinc-200' },
+  { id: 'azul', name: 'Azul', label: 'Raro', color: 'bg-blue-500', text: 'text-white', border: 'border-blue-400' },
+  { id: 'morado', name: 'Morado', label: 'Épico', color: 'bg-purple-600', text: 'text-white', border: 'border-purple-400' },
+  { id: 'negro', name: 'Negro', label: 'Uno en el mundo', color: 'bg-zinc-950', text: 'text-white', border: 'border-zinc-800' }
+];
+
 export const normalizeStickerId = (id: string) => {
   if (!id) return id;
   

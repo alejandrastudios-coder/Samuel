@@ -112,7 +112,8 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
       setConfirmDelete(null);
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert('Error al eliminar el usuario y sus datos.');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      alert('Error al eliminar el usuario y sus datos: ' + errorMessage);
     }
   };
 

@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress } from '../types';
-import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId } from '../constants';
-import { motion } from 'motion/react';
-import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus, X } from 'lucide-react';
+import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, RARITIES } from '../constants';
+import { motion, AnimatePresence } from 'motion/react';
+import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus, X, Settings2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RepeatedList } from './RepeatedList';
@@ -19,6 +19,20 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const [unreadCount, setUnreadCount] = useState(0);
   const [isRepeatedListOpen, setIsRepeatedListOpen] = useState(false);
   const [isIOSModalOpen, setIsIOSModalOpen] = useState(false);
+  const [isRarityModalOpen, setIsRarityModalOpen] = useState(false);
+
+  const currentRarity = userProfile?.rarity || 'blanco';
+  const rarityData = RARITIES.find(r => r.id === currentRarity) || RARITIES[0];
+
+  const updateRarity = async (rarityId: string) => {
+    if (!userProfile) return;
+    try {
+      await updateDoc(doc(db, 'users', userProfile.userId), { rarity: rarityId });
+      setIsRarityModalOpen(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     if (!userProfile) return;
@@ -458,7 +472,19 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">
             ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-red via-worldcup-green to-worldcup-blue animate-gradient-x">{userProfile?.displayName}</span>!
           </h2>
-          <p className="text-zinc-400 mt-2 font-medium">Tu camino a la gloria eterna ha comenzado.</p>
+          <div className="flex items-center gap-3 mt-2">
+            <p className="text-zinc-400 font-medium whitespace-nowrap">Tu camino a la gloria eterna ha comenzado.</p>
+            <button 
+              onClick={() => setIsRarityModalOpen(true)}
+              className={cn(
+                "px-3 py-1 rounded-lg border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all hover:scale-105 active:scale-95",
+                rarityData.color, rarityData.text, rarityData.border
+              )}
+            >
+              Álbum {rarityData.name}
+              <Settings2 className="w-3 h-3 opacity-60" />
+            </button>
+          </div>
         </div>
 
         <div className="relative z-10 hidden sm:flex items-center gap-3 bg-black/40 backdrop-blur-md p-1.5 rounded-2xl border border-zinc-800">
@@ -526,48 +552,52 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 blur-[120px] -mr-48 -mt-48 rounded-full" />
           
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-8 bg-amber-500 rounded-full" />
-                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Podio de Coleccionistas</h3>
+            <div className="flex items-center justify-between mb-10">
+              <div className="flex items-center gap-4">
+                <div className="w-1 h-8 bg-amber-500 rounded-full" />
+                <div>
+                  <h3 className="text-xl font-black text-white italic uppercase tracking-tighter leading-none">Podio</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[9px] text-amber-500/80 font-black uppercase tracking-widest border-r border-zinc-800 pr-2">Top 3 Histórico</span>
+                    <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest">{Object.keys(allUsers).length} Miembros en total</span>
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20 font-black uppercase tracking-[0.2em]">Top Usuarios</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {leaderboard.map((item, idx) => (
                 <div 
                   key={item.userId} 
                   className={cn(
-                    "relative p-6 rounded-[2rem] border transition-all hover:scale-[1.02] duration-300",
-                    idx === 0 ? "bg-amber-500/10 border-amber-500/30 shadow-lg shadow-amber-500/10" :
-                    idx === 1 ? "bg-zinc-800/10 border-zinc-700/50 shadow-lg shadow-black/20" :
-                    "bg-zinc-800/10 border-zinc-800/50"
+                    "group relative p-6 rounded-[2rem] border transition-all duration-300",
+                    idx === 0 ? "bg-amber-500/5 border-amber-500/20" : "bg-black/20 border-zinc-800/50"
                   )}
                 >
-                  <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-zinc-950 border-2 border-zinc-800 flex items-center justify-center font-black italic shadow-xl">
-                    <span className={cn(
-                      "text-lg",
-                      idx === 0 ? "text-amber-500" :
-                      idx === 1 ? "text-zinc-400" :
-                      "text-amber-700"
-                    )}>{idx + 1}°</span>
-                  </div>
-                  
                   <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center shadow-lg">
-                      <Users className="w-8 h-8 text-white/20" />
+                    <div className="relative">
+                      <div className={cn(
+                        "w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl border transition-transform group-hover:scale-105",
+                        idx === 0 ? "bg-amber-500/10 border-amber-500/20" : "bg-zinc-900 border-zinc-800"
+                      )}>
+                        <Users className={cn("w-6 h-6", idx === 0 ? "text-amber-500" : "text-zinc-600")} />
+                      </div>
+                      <div className={cn(
+                        "absolute -top-2 -right-2 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black italic border shadow-lg",
+                        idx === 0 ? "bg-amber-500 text-black border-amber-400" : 
+                        idx === 1 ? "bg-zinc-700 text-white border-zinc-600" : 
+                        "bg-amber-900 text-amber-200 border-amber-800"
+                      )}>
+                        {idx + 1}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-white font-black italic uppercase truncate max-w-[150px]">{item.user?.displayName}</p>
-                      <p className="text-3xl font-black text-worldcup-green italic">{item.rate}%</p>
-                    </div>
-                    <div className="space-y-2">
-                       <p className="text-[10px] text-zinc-500 font-bold leading-tight px-4">
-                        {idx === 0 ? "¡Liderando el camino a la gloria! Un verdadero historiador de la Copa Mundo." : 
-                         idx === 1 ? "¡Paso firme y decidido! Estás a nada de la cima, no te detengas." :
-                         "¡En el podio de honor! Demostrando que cada estampa cuenta."}
-                      </p>
+                    
+                    <div className="min-w-0 w-full">
+                      <p className="text-white font-black italic uppercase truncate text-sm px-2">{item.user?.displayName}</p>
+                      <div className="flex items-center justify-center gap-1.5 mt-1">
+                        <Star className={cn("w-3 h-3", idx === 0 ? "text-amber-500" : "text-zinc-600")} />
+                        <span className="text-xl font-black text-worldcup-green italic">{item.rate}%</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -675,6 +705,76 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         onClose={() => setIsRepeatedListOpen(false)} 
         stickers={normalizedMyStickers} 
       />
+
+      <AnimatePresence>
+        {isRarityModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3rem] max-w-md w-full relative"
+            >
+              <button 
+                onClick={() => setIsRarityModalOpen(false)}
+                className="absolute top-6 right-6 w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-all active:scale-90 shadow-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-worldcup-green/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-worldcup-green/20">
+                  <Star className="w-8 h-8 text-worldcup-green" />
+                </div>
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tight">Rareza de tu Álbum</h3>
+                <p className="text-zinc-500 text-xs mt-2 font-medium">Define el estilo de tu colección en Stickers 2026.</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                {RARITIES.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => updateRarity(r.id)}
+                    className={cn(
+                      "group p-4 rounded-2xl border flex items-center justify-between transition-all relative overflow-hidden",
+                      currentRarity === r.id 
+                        ? `${r.border} bg-white/5 shadow-xl` 
+                        : "border-zinc-800 bg-zinc-950/30 hover:border-zinc-700 hover:bg-zinc-900"
+                    )}
+                  >
+                    <div className="flex items-center gap-4 relative z-10">
+                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-lg", r.color)}>
+                        <div className="w-4 h-4 bg-white/20 rounded-full blur-[2px] animate-pulse" />
+                      </div>
+                      <div className="text-left">
+                        <p className={cn("font-black uppercase text-sm leading-tight", currentRarity === r.id ? "text-white" : "text-zinc-300 group-hover:text-white")}>
+                          {r.name}
+                        </p>
+                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{r.label}</p>
+                      </div>
+                    </div>
+                    {currentRarity === r.id ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-500 relative z-10" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-zinc-800 group-hover:text-zinc-600 transition-colors" />
+                    )}
+                    {currentRarity === r.id && (
+                      <motion.div 
+                        layoutId="rarity-active"
+                        className={cn("absolute inset-y-0 right-0 w-1", r.color.replace('bg-', 'bg-'))}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+              
+              <p className="text-[9px] text-zinc-600 italic mt-6 text-center px-4 leading-relaxed">
+                * Cambiar la rareza afectará cómo te ven otros coleccionistas en el Market y el chat. No afecta tu progreso total.
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -6,12 +6,14 @@ import { motion } from 'motion/react';
 import { Trophy, Lock, User as UserIcon, UserPlus, LogIn } from 'lucide-react';
 import { UserProfile } from '../types';
 import { WorldCupBall } from './ui/WorldCupBall';
+import { RARITIES } from '../constants';
 
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [selectedRarity, setSelectedRarity] = useState('blanco');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -60,7 +62,8 @@ export default function Login() {
           email: email,
           status: isSamuel ? 'approved' : 'pending',
           role: isSamuel ? 'admin' : 'user',
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
+          rarity: selectedRarity
         };
 
         await setDoc(doc(db, 'users', userId), newUser);
@@ -188,6 +191,35 @@ export default function Login() {
                 </div>
               </div>
             )}
+
+            {isRegister && (
+              <div className="space-y-4 pt-2">
+                <label className="text-xs font-bold text-zinc-500 uppercase ml-2">¿En qué rareza quieres el álbum?</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {RARITIES.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setSelectedRarity(r.id)}
+                      className={cn(
+                        "p-3 rounded-xl border flex flex-col items-center gap-1 transition-all relative overflow-hidden",
+                        selectedRarity === r.id 
+                          ? `${r.border} bg-white/5 shadow-xl scale-[1.02]` 
+                          : "border-zinc-800 bg-zinc-900/30 opacity-60 grayscale hover:opacity-100 hover:grayscale-0"
+                      )}
+                    >
+                      <div className={cn("w-6 h-6 rounded-lg", r.color)} />
+                      <span className="text-[10px] font-black uppercase text-white">{r.name}</span>
+                      <span className="text-[8px] font-bold uppercase text-zinc-500">{r.label}</span>
+                      {selectedRarity === r.id && (
+                        <div className={cn("absolute top-0 right-0 w-1.5 h-1.5 rounded-full m-2", r.color)} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-1">
               <label className="text-xs font-bold text-zinc-500 uppercase ml-2">Usuario</label>
               <div className="relative">

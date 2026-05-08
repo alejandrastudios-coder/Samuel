@@ -61,6 +61,7 @@ service cloud.firestore {
       allow read: if isApproved() || isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) || isAdmin();
       allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
     }
 
     // 3. Chats
@@ -69,6 +70,7 @@ service cloud.firestore {
       allow list, update: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
       // Create is allowed if user is in participants and approved
       allow create: if isApproved() && (request.auth.uid in request.resource.data.participants || isAdmin());
+      allow delete: if isAdmin();
     }
     
     // 4. Messages
@@ -77,6 +79,7 @@ service cloud.firestore {
       allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
       // For create, we can check if UID is part of the chatId to avoid propagation delays during first message
       allow create: if isApproved() && (request.auth.uid in chatId.split('_') || isAdmin());
+      allow delete: if isAdmin();
     }
 
     match /test/connection {
