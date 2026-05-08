@@ -164,7 +164,9 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
         "ENG England": [1,2,4,7,8,10,12,19],
         "CRO Croatia": [1,2,3,4,6,8,11,14,18],
         "GHA Ghana": [2,3,10,17],
-        "PAN Panama": [1,2,4,7,10,11,15,17]
+        "PAN Panama": [1,2,4,7,10,11,15,17],
+        "UFW": [2,7,9,13,17,19],
+        "COCA-COLA": [1,4,5,7,8,10,11]
       };
 
       const progressRef = doc(db, 'album_progress', userProfile.userId);
