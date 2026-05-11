@@ -22,9 +22,14 @@ export const RARITIES = [
 export const normalizeStickerId = (id: string) => {
   if (!id) return id;
   
+  let normalized = id;
+  if (normalized.startsWith('UFW')) normalized = normalized.replace('UFW', 'FWC');
+  if (normalized.startsWith('COCA-COLA')) normalized = normalized.replace('COCA-COLA', 'CC');
+  if (normalized.startsWith('extra-')) normalized = normalized.replace('extra-', 'CC-');
+
   // If it's a team-index format, map it to the current team name
-  if (id.startsWith('team-')) {
-    const parts = id.split('-');
+  if (normalized.startsWith('team-')) {
+    const parts = normalized.split('-');
     const index = parseInt(parts[1]);
     if (!isNaN(index) && TEAMS[index]) {
       return `${TEAMS[index]}-${parts[2]}`;
@@ -32,13 +37,11 @@ export const normalizeStickerId = (id: string) => {
   }
 
   // If it's already a name-num format
-  // Check if it has an old name or a new name with 3 letters
-  // We can try to extract the number at the end
-  const lastDash = id.lastIndexOf('-');
-  if (lastDash === -1) return id;
+  const lastDash = normalized.lastIndexOf('-');
+  if (lastDash === -1) return normalized;
   
-  const namePart = id.substring(0, lastDash);
-  const numPart = id.substring(lastDash + 1);
+  const namePart = normalized.substring(0, lastDash);
+  const numPart = normalized.substring(lastDash + 1);
 
   // Try to find if this namePart corresponds to any team (ignoring accents and the 3-letter prefix)
   const clean = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/^[a-z]{3}\s+/, "");
@@ -50,7 +53,7 @@ export const normalizeStickerId = (id: string) => {
     }
   }
 
-  return id;
+  return normalized;
 };
 
 export const FLAGS: Record<string, string> = {

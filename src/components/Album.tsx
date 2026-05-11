@@ -136,18 +136,46 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
   }, [groups, search, filter, normalizedMyStickers]);
 
   const toggleSticker = async (stickerId: string, decrement: boolean = false) => {
-    if (!userProfile) return;
-    const currentCount = progress?.stickers[stickerId] || 0;
-    let nextCount = decrement ? Math.max(0, currentCount - 1) : currentCount + 1;
+    if (!userProfile || !progress) return;
     
-    // If it was repeated (2+) and we decrement, we can go back to 1. 
-    // If it was 0 and we decrement, it stays 0.
+    const targetNormId = normalizeStickerId(stickerId);
+    
+    // Find all keys that normalize to this targetId
+    const entries = Object.entries(progress.stickers);
+    let totalCount = 0;
+    const existingKeys: string[] = [];
+    
+    entries.forEach(([id, s]) => {
+      if (normalizeStickerId(id) === targetNormId) {
+        totalCount += s;
+        if (s > 0) existingKeys.push(id);
+      }
+    });
+
+    let nextCount = decrement ? Math.max(0, totalCount - 1) : totalCount + 1;
     
     try {
-      await updateDoc(doc(db, 'album_progress', userProfile.userId), {
-        [`stickers.${stickerId}`]: nextCount,
+      // If decrementing, we ideally want to decrement from an existing key
+      // If multiple keys exist, we'll standardize to the one used by the grid (stickerId)
+      const updates: Record<string, any> = {
         updatedAt: serverTimestamp()
-      });
+      };
+
+      if (decrement) {
+        if (totalCount <= 0) return;
+        
+        // Remove 1 from the first key that has a count
+        if (existingKeys.length > 0) {
+          const keyToUpdate = existingKeys[0];
+          updates[`stickers.${keyToUpdate}`] = progress.stickers[keyToUpdate] - 1;
+        }
+      } else {
+        // Increment - if targetNormId exists in any form, increment that one, or use stickerId
+        const keyToUpdate = existingKeys.length > 0 ? existingKeys[0] : stickerId;
+        updates[`stickers.${keyToUpdate}`] = (progress.stickers[keyToUpdate] || 0) + 1;
+      }
+
+      await updateDoc(doc(db, 'album_progress', userProfile.userId), updates);
     } catch (error) {
       console.error("Error updating sticker:", error);
     }
@@ -310,6 +338,10 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                           <div key={id} className="relative group/sticker">
                             <button
                               onClick={() => setSelectedSticker({ id, num: i + 1, group })}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                if (count > 0) toggleSticker(id, true);
+                              }}
                               className={cn(
                                 "w-full aspect-square rounded-xl text-[10px] font-black flex items-center justify-center transition-all relative border-2 active:scale-90",
                                 count === 0 && "bg-zinc-900 border-zinc-800 text-zinc-700 hover:border-zinc-700",
