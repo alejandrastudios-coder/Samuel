@@ -97,8 +97,8 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
       flag: FLAGS[team] || 'https://flagcdn.com/un.svg'
     }));
 
-    list.push({ id: 'UFW', name: 'FWC', count: FWC_COUNT, type: 'special' });
-    list.push({ id: 'COCA-COLA', name: 'Coca Cola', count: COCA_COLA_COUNT, type: 'special' });
+    list.push({ id: 'FWC', name: 'FWC', count: FWC_COUNT, type: 'special' });
+    list.push({ id: 'CC', name: 'Coca Cola', count: COCA_COLA_COUNT, type: 'special' });
     
     return list;
   }, []);
@@ -124,7 +124,8 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
       const ownedCount = Array.from({ length: group.count }).filter((_, i) => {
         const id = `${group.id}-${i + 1}`;
-        return (normalizedMyStickers[id] || 0) >= 1;
+        const normId = normalizeStickerId(id);
+        return (normalizedMyStickers[normId] || 0) >= 1;
       }).length;
 
       if (filter === 'complete') return ownedCount === group.count;
@@ -234,15 +235,17 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredGroups.map((group, idx) => {
-          const ownedInGroup = Array.from({ length: group.count }).filter((_, i) => {
-            const id = `${group.id}-${i + 1}`;
-            return (normalizedMyStickers[id] || 0) >= 1;
-          }).length;
+        const ownedInGroup = Array.from({ length: group.count }).filter((_, i) => {
+          const id = `${group.id}-${i + 1}`;
+          const normId = normalizeStickerId(id);
+          return (normalizedMyStickers[normId] || 0) >= 1;
+        }).length;
 
-          const hasRepeated = Array.from({ length: group.count }).some((_, i) => {
-            const id = `${group.id}-${i + 1}`;
-            return (normalizedMyStickers[id] || 0) > 1;
-          });
+        const hasRepeated = Array.from({ length: group.count }).some((_, i) => {
+          const id = `${group.id}-${i + 1}`;
+          const normId = normalizeStickerId(id);
+          return (normalizedMyStickers[normId] || 0) > 1;
+        });
           
           const isCompleted = ownedInGroup === group.count;
 
@@ -271,7 +274,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                       <img src={group.flag} alt={group.name} className="w-8 h-6 object-cover rounded-sm shadow-sm" />
                     ) : (
                       <div className="w-8 h-8 rounded-lg bg-green-600/20 flex items-center justify-center">
-                         {group.id === 'FWC' || group.id === 'UFW' ? <Trophy className="w-4 h-4 text-green-500" /> : <Star className="w-4 h-4 text-green-500" />}
+                         {group.id === 'FWC' ? <Trophy className="w-4 h-4 text-green-500" /> : <Star className="w-4 h-4 text-green-500" />}
                       </div>
                     )}
                     {hasRepeated && (
@@ -332,7 +335,8 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                     <div className="p-4 grid grid-cols-5 gap-2 border-t border-zinc-800/30">
                       {Array.from({ length: group.count }).map((_, i) => {
                         const id = `${group.id}-${i + 1}`;
-                        const count = normalizedMyStickers[id] || 0;
+                        const normId = normalizeStickerId(id);
+                        const count = normalizedMyStickers[normId] || 0;
                         
                         return (
                           <div key={id} className="relative group/sticker">
@@ -399,8 +403,8 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
               <div className="flex items-center gap-4 mb-8">
                 <div className={cn(
                   "w-20 h-20 rounded-[2rem] flex items-center justify-center text-3xl font-black italic shadow-2xl border-4",
-                  (normalizedMyStickers[selectedSticker.id] || 0) === 0 ? "bg-zinc-900 border-zinc-800 text-zinc-700" :
-                  (normalizedMyStickers[selectedSticker.id] || 0) === 1 ? "bg-green-600 border-green-500 text-white" :
+                  (normalizedMyStickers[normalizeStickerId(selectedSticker.id)] || 0) === 0 ? "bg-zinc-900 border-zinc-800 text-zinc-700" :
+                  (normalizedMyStickers[normalizeStickerId(selectedSticker.id)] || 0) === 1 ? "bg-green-600 border-green-500 text-white" :
                   "bg-amber-500 border-amber-400 text-white"
                 )}>
                   {selectedSticker.num}
@@ -410,7 +414,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                     {selectedSticker.group.name} #{selectedSticker.num}
                   </h4>
                   <p className="text-sm text-zinc-500 font-bold uppercase tracking-widest mt-1">
-                    Tienes {(normalizedMyStickers[selectedSticker.id] || 0)} {(normalizedMyStickers[selectedSticker.id] || 0) === 1 ? 'copia' : 'copias'}
+                    Tienes {(normalizedMyStickers[normalizeStickerId(selectedSticker.id)] || 0)} {(normalizedMyStickers[normalizeStickerId(selectedSticker.id)] || 0) === 1 ? 'copia' : 'copias'}
                   </p>
                 </div>
               </div>
@@ -418,7 +422,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleSticker(selectedSticker.id, true); }}
-                  disabled={(normalizedMyStickers[selectedSticker.id] || 0) === 0}
+                  disabled={(normalizedMyStickers[normalizeStickerId(selectedSticker.id)] || 0) === 0}
                   className="flex items-center justify-center gap-3 py-6 bg-zinc-900 border border-zinc-800 rounded-[2rem] text-white font-black text-lg transition-all active:scale-95 disabled:opacity-20 disabled:active:scale-100"
                 >
                   <span className="text-3xl">-</span>
@@ -519,7 +523,10 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                             
                             if (!chatSnap.exists()) {
                               const [teamId, num] = match.stickerId.split('-');
-                              const label = teamId === 'UFW' ? 'FWC' : teamId;
+                              let label = teamId;
+                              if (teamId === 'FWC' || teamId === 'UFW') label = 'FWC';
+                              if (teamId === 'CC' || teamId === 'COCA-COLA') label = 'Coca Cola';
+                              
                               const initialMessage = `¡Hola! Vi que tienes la estampa de ${label} ${num} repetida y me interesa.`;
                               await setDoc(chatRef, {
                                 participants,

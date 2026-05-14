@@ -4,15 +4,13 @@ import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, setD
 import { db } from '../lib/firebase';
 import { UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Users, CheckCircle, XCircle, Trash2, Shield, User, 
-  Search, Filter, ArrowLeft, LogOut, Plus, Edit2, 
-  X, AlertTriangle, Save, Database
-} from 'lucide-react';
+import { Users, CheckCircle, XCircle, Trash2, Shield, User, Search, Filter, ArrowLeft, LogOut, Plus, Edit2, X, AlertTriangle, Save, Database, LayoutGrid } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { normalizeStickerId } from '../constants';
 
 export default function AdminPanel({ userProfile }: { userProfile: UserProfile | null }) {
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [allProgress, setAllProgress] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
@@ -34,12 +32,18 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
       return;
     }
     const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snap) => {
+    const usersUnsub = onSnapshot(q, (snap) => {
       setUsers(snap.docs.map(d => ({ ...d.data() } as UserProfile)));
-    }, (error) => {
-      console.error("Error fetching users for admin:", error);
     });
-    return () => unsub();
+
+    const progressUnsub = onSnapshot(collection(db, 'album_progress'), (snap) => {
+      setAllProgress(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    return () => {
+      usersUnsub();
+      progressUnsub();
+    };
   }, []);
 
   const resetForm = () => {
@@ -167,8 +171,8 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
         "CRO Croatia": [1,2,3,4,6,8,11,14,18],
         "GHA Ghana": [2,3,10,17],
         "PAN Panama": [1,2,4,7,10,11,15,17],
-        "UFW": [2,7,9,13,17,19],
-        "COCA-COLA": [1,4,5,7,8,10,11]
+        "FWC": [2,7,9,13,17,19],
+        "CC": [1,4,5,7,8,10,11]
       };
 
       // Ensure we target the document ID that Album.tsx expects (the userId)
@@ -331,8 +335,51 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                         {user.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : <User className="text-zinc-500 w-6 h-6" />}
                       </div>
                       <div>
-                        <div className="text-sm font-black text-white group-hover:text-green-500 transition-colors">{user.displayName}</div>
-                        <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">@{user.username}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-black text-white group-hover:text-green-500 transition-colors uppercase italic">{user.displayName}</div>
+                          <div className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">@{user.username}</div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          {(() => {
+                            const progress = allProgress.find(p => p.id === user.userId || p.userId === user.userId);
+                            const stickers = progress?.stickers || {};
+                            
+                            const uniqueFWC = new Set<string>();
+                            const uniqueCC = new Set<string>();
+                            const uniqueStandard = new Set<string>();
+
+                            Object.entries(stickers).forEach(([id, qty]) => {
+                              if ((qty as number) <= 0) return;
+                              const norm = normalizeStickerId(id);
+                              if (norm.startsWith('FWC') || norm.startsWith('UFW')) {
+                                uniqueFWC.add(norm);
+                              } else if (norm.startsWith('CC') || norm.startsWith('COCA-COLA')) {
+                                uniqueCC.add(norm);
+                              } else {
+                                uniqueStandard.add(norm);
+                              }
+                            });
+
+                            const total = uniqueFWC.size + uniqueCC.size + uniqueStandard.size;
+
+                            return (
+                              <>
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-950/50 rounded-lg border border-zinc-800/80" title="Total Figuras">
+                                  <LayoutGrid className="w-2.5 h-2.5 text-white/40" />
+                                  <span className="text-[9px] font-black text-white italic">{total}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-950/50 rounded-lg border border-zinc-800/80" title="Figuras FWC">
+                                  <span className="text-[9px] font-black text-green-500 italic">FWC:</span>
+                                  <span className="text-[9px] font-black text-white italic">{uniqueFWC.size}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-950/50 rounded-lg border border-zinc-800/80" title="Figuras Coca Cola">
+                                  <span className="text-[9px] font-black text-red-500 italic">CC:</span>
+                                  <span className="text-[9px] font-black text-white italic">{uniqueCC.size}</span>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
                   </td>

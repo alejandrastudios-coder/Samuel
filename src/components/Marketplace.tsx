@@ -102,7 +102,9 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
 
       const getLabel = (id: string) => {
         const [teamName, num] = id.split('-');
-        const label = teamName === 'UFW' ? 'FWC' : teamName;
+        let label = teamName;
+        if (teamName === 'FWC' || teamName === 'UFW') label = 'FWC';
+        if (teamName === 'CC' || teamName === 'COCA-COLA') label = 'Coca Cola';
         return `${label} ${num}`;
       };
 
