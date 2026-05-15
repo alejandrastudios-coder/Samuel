@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress, UserGroup } from '../types';
-import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, RARITIES, ALL_COUNTRIES } from '../constants';
+import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, RARITIES, ALL_COUNTRIES, FLAGS } from '../constants';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus, X, Settings2, MapPin, Tag } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -691,37 +691,68 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                       )}
                     </div>
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1 py-1">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                         <p className={cn(
-                          "font-black uppercase tracking-tight truncate",
-                          idx === 0 ? "text-white text-lg sm:text-xl" : "text-zinc-200 text-sm sm:text-base"
+                          "font-black uppercase tracking-tight drop-shadow-md",
+                          idx === 0 ? "text-white text-2xl sm:text-3xl leading-none" : "text-zinc-50 text-xl leading-none"
                         )}>
                           {item.user?.displayName}
                         </p>
-                        {idx === 0 && (
-                          <div className="flex items-center gap-1 bg-amber-500 text-black px-2 py-0.5 rounded-full shadow-lg">
-                            <Star className="w-2.5 h-2.5 fill-current" />
-                            <span className="text-[8px] font-black uppercase tracking-tighter">LEYENDA</span>
+                        <div className="flex items-center gap-1.5">
+                          {idx === 0 && (
+                            <div className="flex items-center gap-1 bg-amber-500 text-black px-3 py-1 rounded-full shadow-lg border border-amber-400">
+                              <Star className="w-2.5 h-2.5 fill-current" />
+                              <span className="text-[9px] font-bold uppercase tracking-widest">LEYENDA</span>
+                            </div>
+                          )}
+                          {idx === 1 && <span className="text-[9px] border-2 border-zinc-400 bg-zinc-950 text-zinc-100 px-3 py-1 rounded-full font-black uppercase tracking-widest shadow-xl">ELITE</span>}
+                          {idx === 2 && <span className="text-[9px] border-2 border-amber-800 bg-zinc-950 text-amber-500 px-3 py-1 rounded-full font-black uppercase tracking-widest shadow-xl">PRO</span>}
+                        </div>
+                      </div>
+
+                      {/* Location and Groups */}
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        {item.user?.residingCountry && (
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 shadow-sm" title={item.user.residingCountry}>
+                            {FLAGS[item.user.residingCountry as keyof typeof FLAGS] ? (
+                              <img src={FLAGS[item.user.residingCountry as keyof typeof FLAGS]} className="w-3 h-2 object-cover rounded-[1px]" alt="" referrerPolicy="no-referrer" />
+                            ) : (
+                              <MapPin className="w-2 h-2 text-worldcup-red" />
+                            )}
+                            <span className="text-[8px] text-zinc-400 font-black uppercase italic tracking-tighter">{item.user.residingCountry}</span>
                           </div>
                         )}
-                        {idx === 1 && <span className="text-[7px] border border-zinc-400/50 text-zinc-400 px-1.5 py-0.5 rounded-full font-black uppercase">Elite</span>}
-                        {idx === 2 && <span className="text-[7px] border border-amber-800/50 text-amber-600 px-1.5 py-0.5 rounded-full font-black uppercase">Pro</span>}
+                        {item.user?.groupIds?.slice(0, 2).map((gid: string) => {
+                          const group = groups.find(g => g.id === gid);
+                          if (!group) return null;
+                          return (
+                            <div 
+                              key={gid}
+                              className="px-2 py-0.5 rounded-md text-[7px] font-black uppercase italic tracking-widest border"
+                              style={{ backgroundColor: `${group.color}15`, color: group.color, borderColor: `${group.color}40` }}
+                            >
+                              {group.name}
+                            </div>
+                          );
+                        })}
                       </div>
                       
                       {/* Color-coded Minimalist KPIs with Labels */}
-                      <div className="flex items-center gap-2 sm:gap-3 mt-1.5 flex-wrap">
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/40 border border-white/5 shadow-sm">
-                          <span className="text-[7px] text-zinc-500 font-black uppercase tracking-tighter">Total</span>
-                          <span className="text-[9px] text-zinc-200 font-bold">{item.owned}</span>
+                      <div className="flex items-center gap-2 sm:gap-3 mt-3 flex-wrap">
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-zinc-950/50 border border-zinc-800 shadow-inner group-hover:border-zinc-700 transition-colors">
+                          <span className="text-[8px] text-zinc-500 font-black uppercase tracking-tighter">Album</span>
+                          <span className="text-xs text-white font-black italic">{item.owned}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-worldcup-green/5 border border-worldcup-green/10 shadow-sm shadow-worldcup-green/5">
-                          <span className="text-[7px] text-worldcup-green/70 font-black uppercase tracking-tighter text-shadow-glow">FWC</span>
-                          <span className="text-[9px] text-worldcup-green font-bold">{item.fwcOwned}</span>
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-worldcup-green/10 border border-worldcup-green/20 shadow-sm transition-transform group-hover:scale-105">
+                          <div className="w-1.5 h-1.5 rounded-full bg-worldcup-green shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                          <span className="text-[8px] text-worldcup-green font-black uppercase tracking-tighter">FWC</span>
+                          <span className="text-xs text-white font-black italic">{item.fwcOwned}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-worldcup-red/5 border border-worldcup-red/10 shadow-sm shadow-worldcup-red/5">
-                          <span className="text-[7px] text-worldcup-red/70 font-black uppercase tracking-tighter text-shadow-glow">Coca</span>
-                          <span className="text-[9px] text-worldcup-red font-bold">{item.ccOwned}</span>
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-worldcup-red/10 border border-worldcup-red/20 shadow-sm transition-transform group-hover:scale-105">
+                          <div className="w-1.5 h-1.5 rounded-full bg-worldcup-red shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                          <span className="text-[8px] text-worldcup-red font-black uppercase tracking-tighter">CC</span>
+                          <span className="text-xs text-white font-black italic">{item.ccOwned}</span>
                         </div>
                       </div>
                     </div>
