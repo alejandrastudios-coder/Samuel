@@ -7,8 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Search, MapPin, MessageSquare, Repeat, User as UserIcon, ArrowRightLeft, ArrowLeft, LogOut } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Marketplace({ userProfile }: { userProfile: UserProfile | null }) {
+  const { t } = useLanguage();
   const [allProgress, setAllProgress] = useState<AlbumProgress[]>([]);
   const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
   const [search, setSearch] = useState('');
@@ -195,8 +197,8 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div className="flex-1">
-          <h2 className="text-3xl font-bold text-white tracking-tight">Zona de Intercambio</h2>
-          <p className="text-zinc-400 mt-1">Conecta con coleccionistas que tienen lo que te falta.</p>
+          <h2 className="text-3xl font-bold text-white tracking-tight italic uppercase">{t('market.title')}</h2>
+          <p className="text-zinc-400 mt-1">{t('market.matches')}</p>
         </div>
       </header>
 

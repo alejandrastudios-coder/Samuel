@@ -36,6 +36,8 @@ import { UserProfile, AlbumProgress } from './types';
 
 import { WorldCupBall } from './components/ui/WorldCupBall';
 import { InstallPrompt } from './components/ui/InstallPrompt';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { LanguageSelector } from './components/LanguageSelector';
 
 // Components
 import Dashboard from './components/Dashboard';
@@ -47,6 +49,7 @@ import Login from './components/Login';
 
 function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, onSignOut: () => void }) {
   const location = useLocation();
+  const { t } = useLanguage();
   const [isInstallable, setIsInstallable] = useState(false);
 
   useEffect(() => {
@@ -69,14 +72,14 @@ function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, o
   };
 
   const menuItems = [
-    { name: 'Inicio', icon: LayoutDashboard, path: '/' },
-    { name: 'Álbum', icon: BookText, path: '/album' },
-    { name: 'Mercado', icon: Repeat, path: '/market' },
-    { name: 'Chat', icon: MessageCircle, path: '/chat' },
+    { name: t('nav.home'), icon: LayoutDashboard, path: '/' },
+    { name: t('nav.album'), icon: BookText, path: '/album' },
+    { name: t('nav.market'), icon: Repeat, path: '/market' },
+    { name: t('nav.chat'), icon: MessageCircle, path: '/chat' },
   ];
 
   if (userProfile?.role === 'admin') {
-    menuItems.push({ name: 'Admin', icon: ShieldCheck, path: '/admin' });
+    menuItems.push({ name: t('nav.admin'), icon: ShieldCheck, path: '/admin' });
   }
 
   return (
@@ -115,13 +118,15 @@ function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, o
         </div>
 
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+          <LanguageSelector />
+          
           {isInstallable && (
             <button 
               onClick={triggerInstall}
               className="flex items-center gap-2 px-3 py-2 bg-green-600/10 text-green-500 rounded-xl font-bold hover:bg-green-600/20 transition-all border border-green-500/20"
             >
               <Download className="w-4 h-4" />
-              <span className="text-[10px] uppercase tracking-wider hidden xs:inline">Instalar</span>
+              <span className="text-[10px] uppercase tracking-wider hidden xs:inline">{t('nav.install')}</span>
             </button>
           )}
           <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-1.5 md:px-3 md:py-2">
@@ -136,7 +141,7 @@ function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, o
               <p className="text-[10px] md:text-xs font-black text-white truncate max-w-[80px] uppercase tracking-tighter">
                 {userProfile?.displayName?.split(' ')[0]}
               </p>
-              <p className="text-[8px] text-zinc-500 font-bold tracking-widest leading-none mt-0.5">ESTADO: {userProfile?.status}</p>
+              <p className="text-[8px] text-zinc-500 font-bold tracking-widest leading-none mt-0.5">{t('nav.status')}: {userProfile?.status}</p>
             </div>
           </div>
           <button 
@@ -316,34 +321,36 @@ export default function App() {
   };
 
   return (
-    <BrowserRouter>
-      <div className="min-h-[100dvh] bg-zinc-950 text-white font-sans selection:bg-green-500/30 selection:text-green-500 flex flex-col">
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/*" element={
-            <AuthGuard userProfile={userProfile} profileLoading={profileLoading} logout={handleLogout}>
-              <TopNav userProfile={userProfile} onSignOut={handleLogout} />
-              <main className="flex-1 overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))] h-[100dvh]">
-                <div className="max-w-7xl mx-auto p-4 md:p-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-                   <Routes>
-                      <Route path="/" element={<Dashboard userProfile={userProfile} />} />
-                      <Route path="/album" element={<Album userProfile={userProfile} />} />
-                      <Route path="/market" element={<Marketplace userProfile={userProfile} />} />
-                      <Route path="/chat" element={<Chat userProfile={userProfile} />} />
-                      <Route path="/chat/:chatId" element={<Chat userProfile={userProfile} />} />
-                      {userProfile?.role === 'admin' && (
-                        <Route path="/admin" element={<AdminPanel userProfile={userProfile} />} />
-                      )}
-                      <Route path="*" element={<Navigate to="/" />} />
-                   </Routes>
-                   <InstallPrompt />
-                </div>
-              </main>
-            </AuthGuard>
-          } />
-        </Routes>
-      </div>
-    </BrowserRouter>
+    <LanguageProvider>
+      <BrowserRouter>
+        <div className="min-h-[100dvh] bg-zinc-950 text-white font-sans selection:bg-green-500/30 selection:text-green-500 flex flex-col">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/*" element={
+              <AuthGuard userProfile={userProfile} profileLoading={profileLoading} logout={handleLogout}>
+                <TopNav userProfile={userProfile} onSignOut={handleLogout} />
+                <main className="flex-1 overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))] h-[100dvh]">
+                  <div className="max-w-7xl mx-auto p-4 md:p-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                     <Routes>
+                        <Route path="/" element={<Dashboard userProfile={userProfile} />} />
+                        <Route path="/album" element={<Album userProfile={userProfile} />} />
+                        <Route path="/market" element={<Marketplace userProfile={userProfile} />} />
+                        <Route path="/chat" element={<Chat userProfile={userProfile} />} />
+                        <Route path="/chat/:chatId" element={<Chat userProfile={userProfile} />} />
+                        {userProfile?.role === 'admin' && (
+                          <Route path="/admin" element={<AdminPanel userProfile={userProfile} />} />
+                        )}
+                        <Route path="*" element={<Navigate to="/" />} />
+                     </Routes>
+                     <InstallPrompt />
+                  </div>
+                </main>
+              </AuthGuard>
+            } />
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
 

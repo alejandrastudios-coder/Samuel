@@ -7,6 +7,7 @@ import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, FLAGS, normalizeS
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Trophy, Star, Repeat, ChevronRight, Check, ArrowLeft, LogOut, User as UserIcon, X, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface StickerGroup {
   id: string;
@@ -17,6 +18,7 @@ interface StickerGroup {
 }
 
 export default function Album({ userProfile }: { userProfile: UserProfile | null }) {
+  const { t } = useLanguage();
   const [progress, setProgress] = useState<AlbumProgress | null>(null);
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -193,8 +195,8 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h2 className="text-2xl font-bold text-white">Mi Colección</h2>
-            <p className="text-sm text-zinc-500">Toca para añadir. Click derecho o botones para reducir.</p>
+            <h2 className="text-2xl font-bold text-white tracking-widest uppercase italic">{t('nav.album')}</h2>
+            <p className="text-sm text-zinc-500">{t('album.owned')}</p>
           </div>
         </div>
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full">
@@ -202,7 +204,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <input 
               type="text"
-              placeholder="Buscar selección..."
+              placeholder={t('album.search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all"
@@ -211,10 +213,10 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
           <div className="flex items-center gap-1 bg-zinc-900/50 p-1 border border-zinc-800 rounded-2xl w-full md:w-auto overflow-x-auto no-scrollbar">
             {[
-              { id: 'all', label: 'Todos' },
-              { id: 'complete', label: 'Completos' },
-              { id: 'empty', label: 'Vacíos' },
-              { id: 'incomplete', label: 'Incompletos' }
+              { id: 'all', label: t('album.filter_all') },
+              { id: 'complete', label: t('album.filter_complete') },
+              { id: 'empty', label: t('dash.empty') },
+              { id: 'incomplete', label: t('dash.incomplete') }
             ].map((f) => (
               <button
                 key={f.id}
@@ -294,7 +296,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[10px] text-zinc-500 uppercase tracking-tighter font-bold">
-                        {ownedInGroup}/{group.count} ESTAMPAS
+                        {ownedInGroup}/{group.count} {t('dash.figures')}
                       </p>
                       <span className={cn(
                         "text-[9px] font-black uppercase tracking-tighter px-1 rounded",
@@ -302,9 +304,9 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                         ownedInGroup === group.count ? "bg-green-500/10 text-green-500" :
                         "bg-blue-500/10 text-blue-500"
                       )}>
-                        {ownedInGroup === 0 ? 'Vacío' :
-                         ownedInGroup === group.count ? 'Completo' :
-                         'Incompleto'}
+                        {ownedInGroup === 0 ? t('dash.empty') :
+                         ownedInGroup === group.count ? t('dash.full') :
+                         t('dash.incomplete')}
                       </span>
                     </div>
                   </div>

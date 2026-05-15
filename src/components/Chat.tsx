@@ -8,8 +8,10 @@ import { Send, User as UserIcon, ArrowLeft, MoreVertical, ShieldCheck, LogOut, A
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
 import { TEAMS, normalizeStickerId, RARITIES } from '../constants';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Chat({ userProfile }: { userProfile: UserProfile | null }) {
+  const { t } = useLanguage();
   const { chatId } = useParams<{ chatId: string }>();
   const navigate = useNavigate();
   const [chats, setChats] = useState<ChatType[]>([]);
@@ -251,7 +253,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
              >
                <ArrowLeft className="w-5 h-5" />
              </button>
-             <h2 className="text-xl font-bold text-white tracking-tight">Mensajes</h2>
+             <h2 className="text-xl font-bold text-white tracking-tight">{t('chat.title')}</h2>
            </div>
         </div>
         <div className="flex-1 overflow-y-auto">

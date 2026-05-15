@@ -10,9 +10,11 @@ import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RepeatedList } from './RepeatedList';
 import { query, where } from 'firebase/firestore';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Dashboard({ userProfile }: { userProfile: UserProfile | null }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [progress, setProgress] = useState<AlbumProgress | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showiOSInstall, setShowiOSInstall] = useState(false);
@@ -272,20 +274,20 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
 
   const stats = [
     { 
-      name: 'Completado', 
+      name: t('dash.completion'), 
       value: `${completionRate}%`, 
-      subValue: `${ownedCount} / ${totalPossible} Figuras`,
+      subValue: `${ownedCount} / ${totalPossible} ${t('dash.figures')}`,
       icon: Trophy, 
       color: 'text-amber-500', 
       bg: 'bg-amber-500/10' 
     },
-    { name: 'Faltantes', value: missingCount, subValue: `${missingRate}%`, icon: Clock, color: 'text-worldcup-red', bg: 'bg-worldcup-red/10' },
-    { name: 'Repetidas', value: repeatedCount, icon: Repeat, color: 'text-amber-500', bg: 'bg-amber-500/10', action: () => setIsRepeatedListOpen(true) },
-    { name: 'Intercambios', value: matchesCount, icon: ArrowRightLeft, color: 'text-purple-500', bg: 'bg-purple-500/10', action: () => navigate('/market') },
+    { name: t('dash.missing'), value: missingCount, subValue: `${missingRate}%`, icon: Clock, color: 'text-worldcup-red', bg: 'bg-worldcup-red/10' },
+    { name: t('dash.repeated'), value: repeatedCount, icon: Repeat, color: 'text-amber-500', bg: 'bg-amber-500/10', action: () => setIsRepeatedListOpen(true) },
+    { name: t('dash.exchanges'), value: matchesCount, icon: ArrowRightLeft, color: 'text-purple-500', bg: 'bg-purple-500/10', action: () => navigate('/market') },
     { 
-      name: 'Incompletos', 
+      name: t('dash.incomplete'), 
       value: teamStats.incompleteTeams, 
-      subValue: `Vacíos: ${teamStats.emptyTeams} | Llenos: ${teamStats.fullTeams}`, 
+      subValue: `${t('dash.empty')}: ${teamStats.emptyTeams} | ${t('dash.full')}: ${teamStats.fullTeams}`, 
       icon: TrendingUp, 
       color: 'text-blue-500', 
       bg: 'bg-blue-500/10' 
@@ -500,7 +502,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
             </div>
           </div>
           <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">
-            ¡Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-red via-worldcup-green to-worldcup-blue animate-gradient-x">{userProfile?.displayName}</span>!
+            {t('dash.welcome')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-red via-worldcup-green to-worldcup-blue animate-gradient-x">{userProfile?.displayName}</span>!
           </h2>
           <div className="flex items-center gap-3 mt-2">
             <p className="text-zinc-400 font-medium whitespace-nowrap">Tu camino a la gloria eterna ha comenzado.</p>
@@ -511,7 +513,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 rarityData.color, rarityData.text, rarityData.border
               )}
             >
-              Álbum {rarityData.name}
+              {t('nav.album')} {rarityData.name}
               <Settings2 className="w-3 h-3 opacity-60" />
             </button>
           </div>
@@ -826,8 +828,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 <div className="w-16 h-16 bg-worldcup-green/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-worldcup-green/20">
                   <Star className="w-8 h-8 text-worldcup-green" />
                 </div>
-                <h3 className="text-2xl font-black text-white italic uppercase tracking-tight">Rareza de tu Álbum</h3>
-                <p className="text-zinc-500 text-xs mt-2 font-medium">Define el estilo de tu colección en Stickers 2026.</p>
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tight">{t('dash.rarity')}</h3>
+                <p className="text-zinc-500 text-xs mt-2 font-medium">{t('dash.edit_rarity')}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
