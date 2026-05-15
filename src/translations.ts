@@ -61,6 +61,8 @@ export const translations: Translations = {
   // Admin
   'admin.title': { es: 'PANEL DE CONTROL', en: 'CONTROL PANEL', pt: 'PAINEL DE CONTROLE' },
   'admin.users': { es: 'Usuarios', en: 'Users', pt: 'Usuários' },
+  'admin.sectors': { es: 'Sectores', en: 'Sectors', pt: 'Setores' },
+  'admin.country': { es: 'País', en: 'Country', pt: 'País' },
   'admin.approve': { es: 'Aprobar', en: 'Approve', pt: 'Aprovar' },
   'admin.reject': { es: 'Rechazar', en: 'Reject', pt: 'Rejeitar' },
 };

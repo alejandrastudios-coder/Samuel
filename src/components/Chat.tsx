@@ -41,10 +41,22 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
       
       unsubChats = onSnapshot(q, (snap) => {
         const chatData = snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatType));
-        // Filter out chats hidden by the current user
+        // Filter out chats hidden by the current user OR not in the same circle
         setChats(chatData.filter(c => {
           const hiddenBy = c.hiddenBy || [];
-          return !hiddenBy.includes(userProfile.userId);
+          if (hiddenBy.includes(userProfile.userId)) return false;
+
+          // --- EXCLUSIVE CIRCLE CHECK ---
+          const pId = c.participants.find(p => p !== userProfile.userId);
+          const peer = pId ? allUsers[pId] : null;
+          
+          if (!peer) return true; // Keep while loading users
+          
+          // Compatibilidad: Mismo país y al menos 1 grupo compartido
+          const sameCountry = userProfile.residingCountry === peer.residingCountry;
+          const sharedGroups = userProfile.groupIds?.filter(gid => peer.groupIds?.includes(gid)) || [];
+          
+          return sameCountry && sharedGroups.length > 0;
         }));
       }, (error) => console.error("Error fetching chats:", error));
 

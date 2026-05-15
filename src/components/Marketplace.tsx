@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, onSnapshot, doc, getDoc, setDoc, addDoc, serverTimestamp, where, getDocs, or, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import { UserProfile, AlbumProgress, Chat } from '../types';
+import { UserProfile, AlbumProgress, Chat, UserGroup } from '../types';
 import { TEAMS, normalizeStickerId } from '../constants';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Search, MapPin, MessageSquare, Repeat, User as UserIcon, ArrowRightLeft, ArrowLeft, LogOut } from 'lucide-react';
+import { Search, MapPin, MessageSquare, Repeat, User as UserIcon, ArrowRightLeft, ArrowLeft, LogOut, Tag } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -13,8 +13,16 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
   const { t } = useLanguage();
   const [allProgress, setAllProgress] = useState<AlbumProgress[]>([]);
   const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
+  const [groups, setGroups] = useState<UserGroup[]>([]);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'groups'), (snap) => {
+      setGroups(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserGroup)));
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (!userProfile) return;
@@ -75,6 +83,13 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
       const peerUser = allUsers[p.userId];
       if (!peerUser || peerUser.status !== 'approved') return null;
 
+      // --- EXCLUSIVE CIRCLE LOGIC ---
+      const sameCountry = userProfile.residingCountry === peerUser.residingCountry;
+      const sharedGroups = userProfile.groupIds?.filter(gid => peerUser.groupIds?.includes(gid)) || [];
+      const isCompatible = sameCountry && sharedGroups.length > 0;
+
+      if (!isCompatible) return null;
+
       // Aggregate my stickers
       const myStickersNormalized: Record<string, number> = {};
       Object.entries(myProgress?.stickers || {}).forEach(([id, s]) => {
@@ -115,6 +130,7 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
         user: peerUser,
         iNeed: theyCanGiveMe,
         theyNeed: iCanGiveThem,
+        sharedGroups,
         getLabel
       };
     }).filter((m): m is any => m !== null);
@@ -232,9 +248,27 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
                 </div>
                 <div>
                   <h4 className="text-white font-bold text-lg">{match.user.displayName}</h4>
-                  <div className="flex items-center gap-2 text-zinc-500 text-xs">
-                    <MapPin className="w-3 h-3" />
-                    <span>Conectado recientemente</span>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    {match.user.residingCountry && (
+                      <div className="flex items-center gap-1 text-zinc-500 text-[10px] uppercase font-black tracking-tight" title="Mismo país">
+                        <MapPin className="w-3 h-3 text-worldcup-red" />
+                        <span>{match.user.residingCountry}</span>
+                      </div>
+                    )}
+                    {match.sharedGroups?.map((gid: string) => {
+                      const group = groups.find(g => g.id === gid);
+                      if (!group) return null;
+                      return (
+                        <div 
+                          key={gid} 
+                          className="flex items-center gap-1 px-2 py-0.5 rounded bg-green-500/10 border border-green-500/20 text-[8px] font-black uppercase italic text-green-500"
+                          title={`Sector compartido: ${group.name}`}
+                        >
+                          <Tag className="w-2 h-2" />
+                          {group.name}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

@@ -10,6 +10,8 @@
         "displayName": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "role": { "type": "string", "enum": ["user", "admin"] },
+        "residingCountry": { "type": "string" },
+        "groupIds": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "email", "status", "role"]
@@ -49,6 +51,17 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["senderId", "text", "createdAt"]
+    },
+    "Group": {
+      "title": "User Group / Sector",
+      "description": "Administrative sector or group for categorizing users.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "color": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "color"]
     }
   },
   "firestore": {
@@ -67,6 +80,10 @@
     "/chats/{chatId}/messages/{messageId}": {
       "schema": "Message",
       "description": "Messages in the conversation."
+    },
+    "/groups/{groupId}": {
+      "schema": "Group",
+      "description": "Administrative sectors."
     }
   }
 }

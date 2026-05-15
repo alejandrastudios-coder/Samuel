@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, collection, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { UserProfile, AlbumProgress } from '../types';
-import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, RARITIES } from '../constants';
+import { UserProfile, AlbumProgress, UserGroup } from '../types';
+import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, RARITIES, ALL_COUNTRIES } from '../constants';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus, X, Settings2 } from 'lucide-react';
+import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus, X, Settings2, MapPin, Tag } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RepeatedList } from './RepeatedList';
-import { query, where } from 'firebase/firestore';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Dashboard({ userProfile }: { userProfile: UserProfile | null }) {
@@ -22,6 +21,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const [isRepeatedListOpen, setIsRepeatedListOpen] = useState(false);
   const [isIOSModalOpen, setIsIOSModalOpen] = useState(false);
   const [isRarityModalOpen, setIsRarityModalOpen] = useState(false);
+  const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
+  const [groups, setGroups] = useState<UserGroup[]>([]);
 
   const currentRarity = userProfile?.rarity || 'cualquier';
   const rarityData = RARITIES.find(r => r.id === currentRarity) || RARITIES[0];
@@ -35,6 +36,23 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       console.error(e);
     }
   };
+
+  const updateCountry = async (countryName: string) => {
+    if (!userProfile) return;
+    try {
+      await updateDoc(doc(db, 'users', userProfile.userId), { residingCountry: countryName });
+      setIsCountryModalOpen(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'groups'), (snap) => {
+      setGroups(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserGroup)));
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (!userProfile) return;
@@ -504,8 +522,9 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">
             {t('dash.welcome')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-red via-worldcup-green to-worldcup-blue animate-gradient-x">{userProfile?.displayName}</span>!
           </h2>
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex flex-wrap items-center gap-3 mt-2">
             <p className="text-zinc-400 font-medium whitespace-nowrap">Tu camino a la gloria eterna ha comenzado.</p>
+            
             <button 
               onClick={() => setIsRarityModalOpen(true)}
               className={cn(
@@ -516,6 +535,39 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               {t('nav.album')} {rarityData.name}
               <Settings2 className="w-3 h-3 opacity-60" />
             </button>
+
+            {userProfile?.residingCountry && (
+              <button 
+                onClick={() => setIsCountryModalOpen(true)}
+                className="px-3 py-1 bg-zinc-950/50 border border-zinc-800 rounded-lg text-[10px] font-black text-white uppercase italic tracking-widest flex items-center gap-2 transition-all hover:border-zinc-700"
+              >
+                <MapPin className="w-3 h-3 text-worldcup-red" />
+                {userProfile.residingCountry}
+              </button>
+            )}
+
+            <div className="flex items-center gap-1">
+              <div className="flex -space-x-1 mr-1">
+                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse border border-green-400" />
+              </div>
+              <span className="text-[9px] font-black text-green-500 tracking-widest uppercase italic">Conexión Segura de Sector Activa</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              {userProfile?.groupIds?.map(gid => {
+                const group = groups.find(g => g.id === gid);
+                if (!group) return null;
+                return (
+                  <div 
+                    key={gid}
+                    className="px-3 py-1 rounded-lg border text-[9px] font-black uppercase italic tracking-widest"
+                    style={{ backgroundColor: `${group.color}15`, color: group.color, borderColor: `${group.color}30` }}
+                  >
+                    {group.name}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -809,6 +861,50 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       />
 
       <AnimatePresence>
+        {isCountryModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3rem] max-w-md w-full relative"
+            >
+              <button 
+                onClick={() => setIsCountryModalOpen(false)}
+                className="absolute top-6 right-6 w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-all active:scale-90 shadow-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-worldcup-red/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-worldcup-red/20">
+                  <MapPin className="w-8 h-8 text-worldcup-red" />
+                </div>
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tight">{t('admin.country')}</h3>
+                <p className="text-zinc-500 text-xs mt-2 font-medium">Actualiza tu ubicación actual</p>
+              </div>
+
+              <div className="max-h-[50vh] overflow-y-auto no-scrollbar grid grid-cols-1 gap-2">
+                {ALL_COUNTRIES.map((country) => (
+                  <button
+                    key={country}
+                    onClick={() => updateCountry(country)}
+                    className={cn(
+                      "p-4 rounded-2xl border flex items-center justify-between transition-all",
+                      userProfile?.residingCountry === country 
+                        ? "border-worldcup-red bg-worldcup-red/5 text-white" 
+                        : "border-zinc-800 bg-zinc-950/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                    )}
+                  >
+                    <span className="font-black uppercase text-xs tracking-widest">{country}</span>
+                    {userProfile?.residingCountry === country && <CheckCircle2 className="w-4 h-4 text-worldcup-red" />}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {isRarityModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
             <motion.div 

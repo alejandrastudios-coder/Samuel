@@ -1,6 +1,13 @@
 export type UserStatus = 'pending' | 'approved' | 'rejected';
 export type UserRole = 'user' | 'admin';
 
+export interface UserGroup {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: any;
+}
+
 export interface UserProfile {
   userId: string;
   username: string; // Added for manual login
@@ -9,6 +16,8 @@ export interface UserProfile {
   displayName: string;
   photoURL?: string;
   rarity?: string;
+  residingCountry?: string; // Non-album country
+  groupIds?: string[]; // Sectors/Groups assigned
   status: UserStatus;
   role: UserRole;
   createdAt: any;

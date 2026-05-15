@@ -49,7 +49,7 @@ service cloud.firestore {
       allow create: if (isSignedIn() && request.auth.uid == userId) || isAdmin();
       
       // Owner can update basic info, Admin can update everything
-      allow update: if (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL'])) 
+      allow update: if (isOwner(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL', 'residingCountry'])) 
                    || isAdmin();
       
       allow delete: if isAdmin();
@@ -84,6 +84,12 @@ service cloud.firestore {
 
     match /test/connection {
       allow get: if true;
+    }
+
+    // 5. Groups (Sectors)
+    match /groups/{groupId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     // Default Deny

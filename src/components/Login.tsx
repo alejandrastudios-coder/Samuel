@@ -1,24 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from '../lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp, query, collection, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, query, collection, where, getDocs, updateDoc, onSnapshot } from 'firebase/firestore';
 import { motion } from 'motion/react';
-import { Trophy, Lock, User as UserIcon, UserPlus, LogIn } from 'lucide-react';
-import { UserProfile } from '../types';
+import { Trophy, Lock, User as UserIcon, UserPlus, LogIn, MapPin } from 'lucide-react';
+import { UserProfile, UserGroup } from '../types';
 import { WorldCupBall } from './ui/WorldCupBall';
-import { RARITIES } from '../constants';
+import { RARITIES, ALL_COUNTRIES } from '../constants';
 
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [residingCountry, setResidingCountry] = useState('');
   const [selectedRarity, setSelectedRarity] = useState('cualquier');
+  const [groups, setGroups] = useState<UserGroup[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const getInternalEmail = (u: string) => `${u.toLowerCase().trim()}@album2026.com`;
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'groups'), (snap) => {
+      setGroups(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserGroup)));
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     // Check if we just registered and are now logged in but pending
@@ -62,6 +71,8 @@ export default function Login() {
           email: email,
           status: isSamuel ? 'approved' : 'pending',
           role: isSamuel ? 'admin' : 'user',
+          residingCountry,
+          groupIds: [],
           createdAt: serverTimestamp(),
           rarity: selectedRarity
         };
@@ -176,18 +187,37 @@ export default function Login() {
           
           <form onSubmit={handleAuth} className="space-y-5 relative z-10">
             {isRegister && (
-               <div className="space-y-1">
-                <label className="text-xs font-bold text-zinc-500 uppercase ml-2">Nombre Público</label>
-                <div className="relative">
-                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-                  <input 
-                    required
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-green-500/50 text-sm"
-                    placeholder="Tu nombre en el app"
-                  />
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-500 uppercase ml-2">Nombre Público</label>
+                  <div className="relative">
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                    <input 
+                      required
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-green-500/50 text-sm"
+                      placeholder="Nombre"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-500 uppercase ml-2">País</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                    <select 
+                      required
+                      value={residingCountry}
+                      onChange={(e) => setResidingCountry(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-green-500/50 text-sm appearance-none"
+                    >
+                      <option value="">País...</option>
+                      {ALL_COUNTRIES.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             )}
