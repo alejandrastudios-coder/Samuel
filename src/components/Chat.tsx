@@ -374,87 +374,88 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
             </div>
           </div>
 
-          <AnimatePresence>
-            {showTradeInfo && tradeInfo && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden bg-zinc-950 border-b border-zinc-800"
-              >
-                 <div className="p-4 flex flex-col gap-4 max-w-4xl mx-auto">
-                   <div className="grid grid-cols-2 gap-4">
-                     <div className="space-y-2">
-                       <div className="flex items-center gap-2 text-[10px] font-black text-green-500 uppercase tracking-widest mb-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                          {t('market.they_need')}:
+          {/* Messages & Trade Info Container */}
+          <div className="flex-1 flex flex-col min-h-0 bg-dots">
+            <AnimatePresence>
+              {showTradeInfo && tradeInfo && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="bg-zinc-950 border-b border-zinc-800 shadow-inner max-h-[60%] flex flex-col shrink-0 z-10"
+                >
+                   <div className="p-4 md:p-6 flex flex-col gap-4 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 max-w-5xl mx-auto w-full">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                       <div className="space-y-3">
+                         <div className="sticky top-0 bg-zinc-950 pb-2 z-10 flex items-center gap-2 text-[10px] font-black text-green-500 uppercase tracking-widest">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                            {t('market.they_need')}:
+                         </div>
+                         <div className="flex flex-wrap gap-2">
+                           {tradeInfo.theyNeed.length > 0 ? tradeInfo.theyNeed.map(item => (
+                             <span key={item.id} className="px-3 py-1.5 bg-zinc-900 border border-zinc-700/50 rounded-xl text-[10px] font-bold text-zinc-200 hover:border-green-500/30 transition-colors">
+                               {item.label}
+                             </span>
+                           )) : <span className="text-[10px] text-zinc-600 italic px-2">{t('chat.no_repeats_peer')}</span>}
+                         </div>
                        </div>
-                       <div className="flex flex-wrap gap-1.5">
-                         {tradeInfo.theyNeed.length > 0 ? tradeInfo.theyNeed.map(item => (
-                           <span key={item.id} className="px-2.5 py-1 bg-zinc-900 border border-zinc-700/50 rounded-lg text-[10px] font-bold text-zinc-200">
-                             {item.label}
-                           </span>
-                         )) : <span className="text-[10px] text-zinc-600 italic">{t('chat.no_repeats_peer')}</span>}
+                       <div className="space-y-3 md:border-l md:border-zinc-800 md:pl-8">
+                         <div className="sticky top-0 bg-zinc-950 pb-2 z-10 flex items-center gap-2 text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            {t('market.connected')}:
+                         </div>
+                         <div className="flex flex-wrap gap-2">
+                           {tradeInfo.iNeed.length > 0 ? tradeInfo.iNeed.map(item => (
+                             <span key={item.id} className="px-3 py-1.5 bg-zinc-900 border border-zinc-700/50 rounded-xl text-[10px] font-bold text-zinc-200 hover:border-amber-500/30 transition-colors">
+                               {item.label}
+                             </span>
+                           )) : <span className="text-[10px] text-zinc-600 italic px-2">{t('chat.no_missing_peer')}</span>}
+                         </div>
                        </div>
                      </div>
-                     <div className="space-y-2 border-l border-zinc-800 pl-4">
-                       <div className="flex items-center gap-2 text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                          {t('market.connected')}:
-                       </div>
-                       <div className="flex flex-wrap gap-1.5">
-                         {tradeInfo.iNeed.length > 0 ? tradeInfo.iNeed.map(item => (
-                           <span key={item.id} className="px-2.5 py-1 bg-zinc-900 border border-zinc-700/50 rounded-lg text-[10px] font-bold text-zinc-200">
-                             {item.label}
-                           </span>
-                         )) : <span className="text-[10px] text-zinc-600 italic">{t('chat.no_missing_peer')}</span>}
-                       </div>
-                     </div>
+
+                     {(tradeInfo.iNeed.length > 0 || tradeInfo.theyNeed.length > 0) && (
+                       <button 
+                          onClick={async () => {
+                            const userRarity = userProfile?.rarity || 'cualquier';
+                            const peerRarity = peerUser?.rarity || 'cualquier';
+
+                            let tMsg = `${t('chat.proposal_intro')}\n\n`;
+                            tMsg += `${t('chat.collecting_rarity')} ${t(`rarity.${userRarity}`).toUpperCase()}.\n`;
+                            tMsg += `${t('chat.you_collecting_rarity')} ${t(`rarity.${peerRarity}`).toUpperCase()}?\n\n`;
+
+                            if (tradeInfo.theyNeed.length > 0) {
+                              tMsg += `👉 ${t('chat.i_can_give')} ${tradeInfo.theyNeed.map(i => i.label).join(', ')}\n`;
+                            }
+                            if (tradeInfo.iNeed.length > 0) {
+                              tMsg += `👈 ${t('chat.i_am_interested')} ${tradeInfo.iNeed.map(i => i.label).join(', ')}\n`;
+                            }
+                            tMsg += `\n${t('chat.trade_interest')}`;
+                            
+                            await addDoc(collection(db, 'chats', chatId!, 'messages'), {
+                              senderId: userProfile?.userId,
+                              text: tMsg,
+                              createdAt: serverTimestamp()
+                            });
+                            
+                            await updateDoc(doc(db, 'chats', chatId!), {
+                              lastMessage: t('chat.proposal_sent'),
+                              updatedAt: serverTimestamp()
+                            });
+                            setShowTradeInfo(false);
+                          }}
+                          className="w-full py-4 mt-2 bg-green-500 text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-green-400 transition-all shadow-xl shadow-green-500/10 active:scale-[0.98]"
+                        >
+                          {t('chat.send_proposal')}
+                        </button>
+                     )}
                    </div>
-
-                   {(tradeInfo.iNeed.length > 0 || tradeInfo.theyNeed.length > 0) && (
-                     <button 
-                        onClick={async () => {
-                          const userRarity = userProfile?.rarity || 'cualquier';
-                          const peerRarity = peerUser?.rarity || 'cualquier';
-
-                          let tMsg = `${t('chat.proposal_intro')}\n\n`;
-                          tMsg += `${t('chat.collecting_rarity')} ${t(`rarity.${userRarity}`).toUpperCase()}.\n`;
-                          tMsg += `${t('chat.you_collecting_rarity')} ${t(`rarity.${peerRarity}`).toUpperCase()}?\n\n`;
-
-                          if (tradeInfo.theyNeed.length > 0) {
-                            tMsg += `👉 ${t('chat.i_can_give')} ${tradeInfo.theyNeed.slice(0, 5).map(i => i.label).join(', ')}${tradeInfo.theyNeed.length > 5 ? '...' : ''}\n`;
-                          }
-                          if (tradeInfo.iNeed.length > 0) {
-                            tMsg += `👈 ${t('chat.i_am_interested')} ${tradeInfo.iNeed.slice(0, 5).map(i => i.label).join(', ')}${tradeInfo.iNeed.length > 5 ? '...' : ''}\n`;
-                          }
-                          tMsg += `\n${t('chat.trade_interest')}`;
-                          
-                          await addDoc(collection(db, 'chats', chatId!, 'messages'), {
-                            senderId: userProfile?.userId,
-                            text: tMsg,
-                            createdAt: serverTimestamp()
-                          });
-                          
-                          await updateDoc(doc(db, 'chats', chatId!), {
-                            lastMessage: t('chat.proposal_sent'),
-                            updatedAt: serverTimestamp()
-                          });
-                          setShowTradeInfo(false);
-                        }}
-                        className="w-full py-2 bg-green-600/10 text-green-500 border border-green-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-600 hover:text-white transition-all"
-                      >
-                        {t('chat.send_proposal')}
-                      </button>
-                   )}
-                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-dots">
-            {messages.map((msg, idx) => {
+                </motion.div>
+              )}
+            </AnimatePresence>
+ 
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+              {messages.map((msg, idx) => {
               const isMine = msg.senderId === userProfile?.userId;
               return (
                 <motion.div 
@@ -480,6 +481,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                 </motion.div>
               );
             })}
+            </div>
           </div>
 
           {/* Input */}
