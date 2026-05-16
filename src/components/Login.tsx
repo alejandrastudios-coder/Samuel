@@ -7,8 +7,10 @@ import { Trophy, Lock, User as UserIcon, UserPlus, LogIn, MapPin } from 'lucide-
 import { UserProfile, UserGroup } from '../types';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RARITIES, ALL_COUNTRIES } from '../constants';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Login() {
+  const { t } = useLanguage();
   const [isRegister, setIsRegister] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -89,9 +91,8 @@ export default function Login() {
         if (isSamuel) {
           navigate('/');
         } else {
-          setError('Registro exitoso. Tu cuenta está pendiente de aprobación por Samuel.');
+          setError(t('login.success_pending'));
           setIsRegister(false);
-          // We stay logged in, AuthGuard will handle the "Pending" screen if they try to go home
         }
       } else {
         console.log('Logging in user:', username);
@@ -133,13 +134,13 @@ export default function Login() {
     } catch (err: any) {
       console.error('Auth error:', err);
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Usuario o contraseña incorrectos');
+        setError(t('login.invalid_credentials'));
       } else if (err.code === 'auth/email-already-in-use') {
-        setError('Este nombre de usuario ya está registrado');
+        setError(t('login.user_exists'));
       } else if (err.code === 'auth/weak-password') {
-        setError('La contraseña es muy débil (mínimo 6 caracteres)');
+        setError(t('login.weak_password'));
       } else {
-        setError('Error: ' + (err.message || 'Error desconocido'));
+        setError(t('login.unknown_error'));
       }
     } finally {
       setLoading(false);
@@ -178,7 +179,7 @@ export default function Login() {
             <div className="absolute inset-0 bg-gradient-to-tr from-worldcup-red via-worldcup-green to-worldcup-blue rounded-full animate-spin-slow opacity-30 group-hover:opacity-50 transition-opacity blur-xl" />
             <WorldCupBall className="w-20 h-20 shadow-2xl relative z-10" animate />
           </div>
-          <h1 className="text-4xl font-black text-white tracking-tight leading-none mb-2">MI ÁLBUM <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-green to-worldcup-blue">2026</span></h1>
+          <h1 className="text-4xl font-black text-white tracking-tight leading-none mb-2">{t('login.title')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-green to-worldcup-blue">2026</span></h1>
           <p className="text-zinc-400 text-sm font-bold uppercase tracking-[0.2em] opacity-60">United for the Game</p>
         </div>
 
@@ -189,7 +190,7 @@ export default function Login() {
             {isRegister && (
                <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 uppercase ml-2">Nombre Público</label>
+                  <label className="text-xs font-bold text-zinc-500 uppercase ml-2">{t('login.public_name')}</label>
                   <div className="relative">
                     <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                     <input 
@@ -198,12 +199,12 @@ export default function Login() {
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-green-500/50 text-sm"
-                      placeholder="Nombre"
+                      placeholder={t('login.name_placeholder')}
                     />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-500 uppercase ml-2">País</label>
+                  <label className="text-xs font-bold text-zinc-500 uppercase ml-2">{t('admin.country')}</label>
                   <div className="relative">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                     <select 
@@ -212,7 +213,7 @@ export default function Login() {
                       onChange={(e) => setResidingCountry(e.target.value)}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-green-500/50 text-sm appearance-none"
                     >
-                      <option value="">País...</option>
+                      <option value="">{t('login.country_placeholder')}</option>
                       {ALL_COUNTRIES.map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
@@ -224,7 +225,7 @@ export default function Login() {
 
             {isRegister && (
               <div className="space-y-4 pt-2">
-                <label className="text-xs font-bold text-zinc-500 uppercase ml-2">¿En qué rareza quieres el álbum?</label>
+                <label className="text-xs font-bold text-zinc-500 uppercase ml-2">{t('login.rarity_question')}</label>
                 <div className="grid grid-cols-2 gap-3">
                   {RARITIES.map((r) => (
                     <button
@@ -239,8 +240,8 @@ export default function Login() {
                       )}
                     >
                       <div className={cn("w-6 h-6 rounded-lg", r.color)} />
-                      <span className="text-[10px] font-black uppercase text-white">{r.name}</span>
-                      <span className="text-[8px] font-bold uppercase text-zinc-500">{r.label}</span>
+                      <span className="text-[10px] font-black uppercase text-white">{t(`rarity.${r.id}`)}</span>
+                      <span className="text-[8px] font-bold uppercase text-zinc-500">{t(`rarity.label_${r.id}`)}</span>
                       {selectedRarity === r.id && (
                         <div className={cn("absolute top-0 right-0 w-1.5 h-1.5 rounded-full m-2", r.color)} />
                       )}
@@ -251,7 +252,7 @@ export default function Login() {
             )}
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-zinc-500 uppercase ml-2">Usuario</label>
+              <label className="text-xs font-bold text-zinc-500 uppercase ml-2">{t('login.username')}</label>
               <div className="relative">
                 <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                 <input 
@@ -260,13 +261,13 @@ export default function Login() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-4 pl-12 pr-4 text-white focus:ring-2 focus:ring-green-500/50 text-sm"
-                  placeholder="Ej: samuel"
+                  placeholder={t('login.username_placeholder')}
                   autoCapitalize="none"
                 />
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-zinc-500 uppercase ml-2">Contraseña</label>
+              <label className="text-xs font-bold text-zinc-500 uppercase ml-2">{t('login.password')}</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                 <input 
@@ -286,7 +287,7 @@ export default function Login() {
                 animate={{ opacity: 1, scale: 1 }}
                 className={cn(
                   "p-3 rounded-xl text-xs font-bold text-center",
-                  error.includes('Registro exitoso') ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                  error === t('login.success_pending') ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
                 )}
               >
                 {error}
@@ -302,7 +303,7 @@ export default function Login() {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  {isRegister ? <><UserPlus className="w-5 h-5" /> Registrarse</> : <><LogIn className="w-5 h-5" /> Ingresar</>}
+                  {isRegister ? <><UserPlus className="w-5 h-5" /> {t('login.register')}</> : <><LogIn className="w-5 h-5" /> {t('login.login')}</>}
                 </>
               )}
             </button>
@@ -313,7 +314,7 @@ export default function Login() {
               onClick={() => { setIsRegister(!isRegister); setError(''); }}
               className="w-full flex items-center justify-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium"
             >
-              {isRegister ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+              {isRegister ? t('login.have_account') : t('login.no_account')}
             </button>
           </div>
         </div>

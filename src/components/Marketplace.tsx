@@ -121,7 +121,7 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
         const [teamName, num] = id.split('-');
         let label = teamName;
         if (teamName === 'FWC' || teamName === 'UFW') label = 'FWC';
-        if (teamName === 'CC' || teamName === 'COCA-COLA') label = 'Coca Cola';
+        if (teamName === 'CC' || teamName === 'COCA-COLA') label = t('album.coca_cola');
         return `${label} ${num}`;
       };
 
@@ -168,7 +168,7 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
       const chatSnap = await getDoc(chatRef);
       
       if (!chatSnap.exists()) {
-        const initialMessage = '¡Hola! He visto tus repetidas en el Market y me interesan.';
+        const initialMessage = t('chat.market_intro');
         await setDoc(chatRef, {
           participants,
           lastMessage: initialMessage,
@@ -199,7 +199,7 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
       navigate(`/chat/${chatId}`);
     } catch (error) {
       console.error("Error starting chat:", error);
-      alert("Error al iniciar el chat. Por favor intenta de nuevo.");
+      alert(t('chat.start_error'));
     }
   };
 
@@ -222,7 +222,7 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
         <input 
           type="text"
-          placeholder="Buscar por coleccionista, equipo o número (ej: ARG 10)..."
+          placeholder={t('market.search_user')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all font-medium"
@@ -250,7 +250,7 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
                   <h4 className="text-white font-bold text-lg">{match.user.displayName}</h4>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
                     {match.user.residingCountry && (
-                      <div className="flex items-center gap-1 text-zinc-500 text-[10px] uppercase font-black tracking-tight" title="Mismo país">
+                      <div className="flex items-center gap-1 text-zinc-500 text-[10px] uppercase font-black tracking-tight" title={t('market.same_country')}>
                         <MapPin className="w-3 h-3 text-worldcup-red" />
                         <span>{match.user.residingCountry}</span>
                       </div>
@@ -262,7 +262,7 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
                         <div 
                           key={gid} 
                           className="flex items-center gap-1 px-2 py-0.5 rounded bg-green-500/10 border border-green-500/20 text-[8px] font-black uppercase italic text-green-500"
-                          title={`Sector compartido: ${group.name}`}
+                          title={`${t('market.shared_sector')}: ${group.name}`}
                         >
                           <Tag className="w-2 h-2" />
                           {group.name}
@@ -283,7 +283,7 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50">
                 <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <ArrowRightLeft className="w-3 h-3" /> Tiene para ti
+                  <ArrowRightLeft className="w-3 h-3" /> {t('market.connected')}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {match.iNeed.slice(0, 5).map((id: string) => (
@@ -298,7 +298,7 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
               </div>
               <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50">
                 <p className="text-[10px] font-black text-green-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                   <Repeat className="w-3 h-3" /> Tú tienes para él
+                   <Repeat className="w-3 h-3" /> {t('market.they_need')}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {match.theyNeed.slice(0, 5).map((id: string) => (
@@ -318,7 +318,7 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
               className="w-full py-4 bg-gradient-to-r from-worldcup-red to-worldcup-red/80 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-worldcup-red/20 active:scale-95 transition-all hover:brightness-110 flex items-center justify-center gap-3 mt-2"
             >
               <MessageSquare className="w-4 h-4" />
-              Negociar Intercambio
+              {t('market.chat')}
             </button>
           </motion.div>
         )) : (
@@ -326,9 +326,9 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
             <div className="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-6">
               <Search className="w-10 h-10 text-zinc-600" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Sin coincidencias exactas</h3>
+            <h3 className="text-xl font-bold text-white mb-2">{t('market.no_matches')}</h3>
             <p className="text-zinc-500 max-w-sm mx-auto">
-              Sigue completando tu álbum. Aparecerán usuarios cuando tengan repetidas las que te faltan.
+              {t('market.exchange_with')}
             </p>
           </div>
         )}

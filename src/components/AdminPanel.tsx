@@ -122,7 +122,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
       resetForm();
     } catch (error) {
       console.error('Error saving user:', error);
-      alert('Error al guardar el usuario');
+      alert(t('admin.save_error'));
     }
   };
 
@@ -188,7 +188,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
     } catch (error) {
       console.error('Error deleting user:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      alert('Error al eliminar el usuario y sus datos: ' + errorMessage);
+      alert(t('admin.delete_error') + errorMessage);
     }
   };
 
@@ -230,7 +230,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
 
   const importSamuelStickers = async () => {
     if (!userProfile) return;
-    if (!confirm('¿Deseas registrar las figuritas solicitadas para tu perfil?')) return;
+    if (!confirm(t('admin.import_confirm'))) return;
     
     setIsImporting(true);
     try {
@@ -298,7 +298,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      alert(`¡Importación completada! Se marcaron ${newCount} nuevas figuritas.`);
+      alert(t('admin.import_complete').replace('{count}', newCount.toString()));
     } catch (error) {
       console.error(error);
       alert('Error durante la importación: ' + (error instanceof Error ? error.message : String(error)));
@@ -308,7 +308,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
   };
 
   const cleanupOrphans = async () => {
-    if (!confirm('Esto borrará todos los datos de progreso de usuarios que ya no existen en el sistema. ¿Continuar?')) return;
+    if (!confirm(t('admin.clean_confirm'))) return;
     setIsCleaning(true);
     try {
       const progressSnap = await getDocs(collection(db, 'album_progress'));
@@ -321,7 +321,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
           count++;
         }
       }
-      alert(`Limpieza completada. Se eliminaron ${count} registros huérfanos.`);
+      alert(t('admin.clean_complete').replace('{count}', count.toString()));
     } catch (error) {
       console.error(error);
       alert('Error durante la limpieza');
@@ -342,7 +342,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
           </button>
           <div className="flex-1">
             <h2 className="text-3xl font-black text-white tracking-tight uppercase italic">{t('admin.title')}</h2>
-            <p className="text-zinc-500 font-medium tracking-tight">Administra accesos, grupos y sectores.</p>
+            <p className="text-zinc-500 font-medium tracking-tight">{t('admin.description')}</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -354,7 +354,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                 activeTab === 'users' ? "bg-green-600 text-white shadow-lg" : "text-zinc-500 hover:text-zinc-300"
               )}
             >
-              USUARIOS
+              {t('admin.users_tab')}
             </button>
             <button 
               onClick={() => setActiveTab('groups')}
@@ -363,7 +363,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                 activeTab === 'groups' ? "bg-green-600 text-white shadow-lg" : "text-zinc-500 hover:text-zinc-300"
               )}
             >
-              SECTORES
+              {t('admin.groups_tab')}
             </button>
           </div>
 
@@ -373,7 +373,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
               className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95"
             >
               <Plus className="w-4 h-4" />
-              <span>NUEVO SECTOR</span>
+              <span>{t('admin.new_group')}</span>
             </button>
           ) : (
             <>
@@ -383,7 +383,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                 className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700"
               >
                 <Database className="w-4 h-4 text-blue-500" />
-                <span>{isImporting ? 'IMPORTANDO...' : 'IMPORTAR SOLICITUD'}</span>
+                <span>{isImporting ? t('admin.importing') : t('admin.import_request')}</span>
               </button>
               <button 
                 onClick={cleanupOrphans}
@@ -391,14 +391,14 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                 className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700"
               >
                 <Shield className="w-4 h-4 text-purple-500" />
-                <span>{isCleaning ? 'LIMPIANDO...' : 'LIMPIAR HUÉRFANOS'}</span>
+                <span>{isCleaning ? t('admin.cleaning') : t('admin.clean_orphans')}</span>
               </button>
               <button 
                 onClick={() => { resetForm(); setIsModalOpen(true); }}
                 className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95"
               >
                 <Plus className="w-4 h-4" />
-                <span>NUEVO</span>
+                <span>{editingUser ? t('admin.save') : t('admin.new_user')}</span>
               </button>
             </>
           )}
@@ -414,7 +414,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                   <input 
                     type="text"
-                    placeholder="Buscar por nombre, email o usuario..."
+                    placeholder={t('admin.search_placeholder')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all text-white"
@@ -427,7 +427,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                     onChange={(e) => setCountryFilter(e.target.value)}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all text-white appearance-none"
                   >
-                    <option value="">Todos los países</option>
+                    <option value="">{t('admin.all_countries')}</option>
                     {Array.from(new Set(users.map(u => u.residingCountry).filter(Boolean))).sort().map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
@@ -437,11 +437,11 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
               <div className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-500 tracking-widest">
                 <div className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950/50 rounded-xl border border-zinc-800">
                   <Shield className="w-4 h-4 text-purple-500" />
-                  <span>{users.filter(u => u.role === 'admin').length} Admins</span>
+                  <span>{t('admin.admins_count').replace('{count}', users.filter(u => u.role === 'admin').length.toString())}</span>
                 </div>
                 <div className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950/50 rounded-xl border border-zinc-800">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span>{users.filter(u => u.status === 'approved').length} Activos</span>
+                  <span>{t('admin.active_count').replace('{count}', users.filter(u => u.status === 'approved').length.toString())}</span>
                 </div>
               </div>
             </div>
@@ -450,11 +450,11 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-zinc-950/50">
-                    <th className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800">Perfil</th>
-                    <th className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800 text-center">Ubicación / Sector</th>
-                    <th className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800">Seguridad</th>
-                    <th className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800">Estado</th>
-                    <th className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800 text-right">Acciones</th>
+                    <th className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800">{t('admin.profile_col')}</th>
+                    <th className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800 text-center">{t('admin.location_sector_col')}</th>
+                    <th className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800">{t('admin.security_col')}</th>
+                    <th className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800">{t('admin.status_col')}</th>
+                    <th className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800 text-right">{t('admin.actions_col')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800">
@@ -501,15 +501,15 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
 
                                 return (
                                   <>
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-950/50 rounded-lg border border-zinc-800/80" title="Total Figuras">
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-950/50 rounded-lg border border-zinc-800/80" title={t('admin.total_figures')}>
                                       <LayoutGrid className="w-2.5 h-2.5 text-white/40" />
                                       <span className="text-[9px] font-black text-white italic">{total}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-950/50 rounded-lg border border-zinc-800/80" title="Figuras FWC">
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-950/50 rounded-lg border border-zinc-800/80" title={t('admin.fwc_figures')}>
                                       <span className="text-[9px] font-black text-green-500 italic">FWC:</span>
                                       <span className="text-[9px] font-black text-white italic">{uniqueFWC.size}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-950/50 rounded-lg border border-zinc-800/80" title="Figuras Coca Cola">
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-950/50 rounded-lg border border-zinc-800/80" title={t('admin.cc_figures')}>
                                       <span className="text-[9px] font-black text-red-500 italic">CC:</span>
                                       <span className="text-[9px] font-black text-white italic">{uniqueCC.size}</span>
                                     </div>
@@ -538,7 +538,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                               </div>
                             );
                           })() : (
-                            <span className="text-[9px] text-zinc-700 font-bold uppercase italic">Sin Ubicación</span>
+                            <span className="text-[9px] text-zinc-700 font-bold uppercase italic">{t('admin.no_location')}</span>
                           )}
 
                           <div className="flex flex-wrap justify-center gap-1">
@@ -556,7 +556,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                               );
                             })}
                             {(!user.groupIds || user.groupIds.length === 0) && (
-                              <span className="text-[8px] text-zinc-800 font-bold">SIN SECTOR</span>
+                              <span className="text-[8px] text-zinc-800 font-bold">{t('admin.no_sector')}</span>
                             )}
                           </div>
                         </div>
@@ -576,7 +576,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                           user.status === 'pending' && "bg-amber-500/10 text-amber-500 border-amber-500/20",
                           user.status === 'rejected' && "bg-red-500/10 text-red-500 border-red-500/20"
                         )}>
-                          {user.status}
+                          {user.status === 'approved' ? t('admin.status_approved') : user.status === 'rejected' ? t('admin.status_rejected') : t('admin.status_pending')}
                         </div>
                       </td>
                       <td className="p-6 text-right">
@@ -584,28 +584,28 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                            <button 
                             onClick={() => setStatus(user.userId, 'approved')}
                             className="p-2.5 text-green-500 hover:bg-green-500/10 rounded-xl transition-all"
-                            title="Aprobar"
+                            title={t('admin.approve_btn')}
                            >
                              <CheckCircle className="w-5 h-5" />
                            </button>
                            <button 
                             onClick={() => setStatus(user.userId, 'rejected')}
                             className="p-2.5 text-amber-500 hover:bg-amber-500/10 rounded-xl transition-all"
-                            title="Bloquear"
+                            title={t('admin.block_btn')}
                            >
                              <XCircle className="w-5 h-5" />
                            </button>
                            <button 
                             onClick={() => openEditModal(user)}
                             className="p-2.5 text-blue-500 hover:bg-blue-500/10 rounded-xl transition-all"
-                            title="Editar"
+                            title={t('admin.edit_btn')}
                            >
                              <Edit2 className="w-5 h-5" />
                            </button>
                            <button 
                             onClick={() => setConfirmDelete(user.userId)}
                             className="p-2.5 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                            title="Eliminar"
+                            title={t('admin.delete_btn')}
                            >
                              <Trash2 className="w-5 h-5" />
                            </button>
@@ -644,7 +644,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                        <div>
                          <h4 className="text-xl font-black text-white italic uppercase tracking-tight">{group.name}</h4>
                          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-                           {users.filter(u => u.groupIds?.includes(group.id)).length} Miembros
+                           {t('admin.members_count').replace('{count}', users.filter(u => u.groupIds?.includes(group.id)).length.toString())}
                          </p>
                        </div>
                      </div>
@@ -669,8 +669,8 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                {groups.length === 0 && (
                  <div className="col-span-full py-20 text-center">
                     <Layers className="w-16 h-16 text-zinc-800 mx-auto mb-4" />
-                    <h3 className="text-xl font-black text-zinc-500 uppercase tracking-tight italic">No hay sectores creados</h3>
-                    <p className="text-zinc-600 text-sm mt-2">Usa el botón "Nuevo Sector" para comenzar a organizar a tus coleccionistas.</p>
+                    <h3 className="text-xl font-black text-zinc-500 uppercase tracking-tight italic">{t('admin.no_groups')}</h3>
+                    <p className="text-zinc-600 text-sm mt-2">{t('admin.no_groups_desc')}</p>
                  </div>
                )}
              </div>
@@ -693,11 +693,10 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-[2.5rem] shadow-2xl overflow-hidden"
-            >
-              <div className="p-8 border-b border-zinc-800 flex items-center justify-between">
+              className="relative w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-[2.5rem] shadow-2xl overflow-hidden">
+                <div className="p-8 border-b border-zinc-800 flex items-center justify-between">
                 <h3 className="text-2xl font-black text-white tracking-tight">
-                  {editingUser ? 'Editar Datos' : 'Nuevo Coleccionista'}
+                  {editingUser ? t('admin.edit_data') : t('admin.new_user')}
                 </h3>
                 <button onClick={() => setIsModalOpen(false)}><X className="w-6 h-6 text-zinc-500" /></button>
               </div>
@@ -705,7 +704,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
               <form onSubmit={handleCreateOrUpdate} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nombre</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('admin.name_label')}</label>
                     <input 
                       required
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-white"
@@ -714,7 +713,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Usuario</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('admin.user_label')}</label>
                     <input 
                       required
                       disabled={!!editingUser}
@@ -727,7 +726,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Contraseña</label>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('admin.pass_label')}</label>
                       <input 
                         required
                         className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-white font-mono"
@@ -736,7 +735,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                       />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">País Residencia</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('admin.country_label')}</label>
                     <div className="relative">
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                       <select 
@@ -744,7 +743,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                         value={formData.residingCountry}
                         onChange={e => setFormData({...formData, residingCountry: e.target.value})}
                       >
-                        <option value="">Seleccionar País</option>
+                        <option value="">{t('admin.country_label')}</option>
                         {ALL_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
@@ -752,7 +751,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Sectores / Grupos</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('admin.sector_label')}</label>
                   <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
                     <div className="grid grid-cols-2 gap-2">
                       {groups.map(group => (
@@ -778,7 +777,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                         </button>
                       ))}
                       {groups.length === 0 && (
-                        <p className="col-span-2 text-[10px] text-zinc-700 italic text-center py-2">No hay sectores creados aún.</p>
+                        <p className="col-span-2 text-[10px] text-zinc-700 italic text-center py-2">{t('admin.no_groups')}</p>
                       )}
                     </div>
                   </div>
@@ -786,32 +785,32 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Rol</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('admin.role_label')}</label>
                     <select 
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-white appearance-none"
                       value={formData.role}
                       onChange={e => setFormData({...formData, role: e.target.value as any})}
                     >
-                      <option value="user">Usuario</option>
-                      <option value="admin">Admin</option>
+                      <option value="user">{t('admin.role_user')}</option>
+                      <option value="admin">{t('admin.role_admin')}</option>
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Acceso</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('admin.access_label')}</label>
                     <select 
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-white appearance-none"
                       value={formData.status}
                       onChange={e => setFormData({...formData, status: e.target.value as any})}
                     >
-                      <option value="approved">Aprobado</option>
-                      <option value="pending">Pendiente</option>
-                      <option value="rejected">Denegado</option>
+                      <option value="approved">{t('admin.status_approved')}</option>
+                      <option value="pending">{t('admin.status_pending')}</option>
+                      <option value="rejected">{t('admin.status_rejected')}</option>
                     </select>
                   </div>
                 </div>
                 <div className="flex gap-3 pt-4 sticky bottom-0 bg-zinc-900 pb-2">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 p-4 bg-zinc-800 text-white rounded-2xl font-bold">CANCELAR</button>
-                  <button type="submit" className="flex-1 p-4 bg-green-600 text-white rounded-2xl font-black">GUARDAR</button>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 p-4 bg-zinc-800 text-white rounded-2xl font-bold">{t('admin.cancel')}</button>
+                  <button type="submit" className="flex-1 p-4 bg-green-600 text-white rounded-2xl font-black">{t('admin.save')}</button>
                 </div>
               </form>
             </motion.div>
@@ -838,7 +837,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
             >
               <div className="p-8 border-b border-zinc-800 flex items-center justify-between">
                 <h3 className="text-xl font-black text-white tracking-tight uppercase italic">
-                  {editingGroup ? 'Editar Sector' : 'Nuevo Sector'}
+                  {editingGroup ? t('admin.edit_sector') : t('admin.new_sector')}
                 </h3>
                 <button onClick={() => setIsGroupModalOpen(false)}><X className="w-6 h-6 text-zinc-500" /></button>
               </div>
@@ -846,12 +845,12 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
               <form onSubmit={handleCreateOrUpdateGroup} className="p-8 space-y-6">
                 <div className="space-y-4">
                    <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nombre del Sector</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('admin.sector_name')}</label>
                     <div className="relative">
                       <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                       <input 
                         required
-                        placeholder="Ej: Staff, VIP, Zona Norte..."
+                        placeholder={t('admin.sector_placeholder')}
                         className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 pl-12 text-white"
                         value={groupFormData.name}
                         onChange={e => setGroupFormData({...groupFormData, name: e.target.value})}
@@ -860,7 +859,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Color de Identidad</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('admin.identity_color')}</label>
                     <div className="grid grid-cols-5 gap-2 bg-zinc-950 p-4 rounded-2xl border border-zinc-800">
                       {['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#06b6d4', '#14b8a6', '#facc15'].map(color => (
                         <button
@@ -879,8 +878,8 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={() => setIsGroupModalOpen(false)} className="flex-1 p-4 bg-zinc-800 text-white rounded-2xl font-bold">CANCELAR</button>
-                  <button type="submit" className="flex-1 p-4 bg-green-600 text-white rounded-2xl font-black">GUARDAR</button>
+                  <button type="button" onClick={() => setIsGroupModalOpen(false)} className="flex-1 p-4 bg-zinc-800 text-white rounded-2xl font-bold">{t('admin.cancel')}</button>
+                  <button type="submit" className="flex-1 p-4 bg-green-600 text-white rounded-2xl font-black">{t('admin.save')}</button>
                 </div>
               </form>
             </motion.div>
@@ -908,11 +907,11 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
               <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <AlertTriangle className="w-8 h-8 text-amber-500" />
               </div>
-              <h3 className="text-xl font-black text-white italic uppercase">¿Eliminar sector?</h3>
-              <p className="text-zinc-500 mt-2 text-sm font-medium">Los usuarios asignados a este sector dejarán de pertenecer a él.</p>
+              <h3 className="text-xl font-black text-white italic uppercase">{t('admin.delete_group_title')}</h3>
+              <p className="text-zinc-500 mt-2 text-sm font-medium">{t('admin.delete_group_desc')}</p>
               <div className="mt-8 flex flex-col gap-3">
-                <button onClick={() => deleteGroup(confirmDeleteGroup)} className="w-full p-4 bg-amber-600 text-white rounded-2xl font-black">ELIMINAR SECTOR</button>
-                <button onClick={() => setConfirmDeleteGroup(null)} className="w-full p-4 bg-zinc-800 text-white rounded-2xl font-semibold">CANCELAR</button>
+                <button onClick={() => deleteGroup(confirmDeleteGroup)} className="w-full p-4 bg-amber-600 text-white rounded-2xl font-black">{t('admin.delete_sector_btn')}</button>
+                <button onClick={() => setConfirmDeleteGroup(null)} className="w-full p-4 bg-zinc-800 text-white rounded-2xl font-semibold">{t('admin.cancel')}</button>
               </div>
             </motion.div>
           </div>
@@ -939,11 +938,11 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
               <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <AlertTriangle className="w-8 h-8 text-red-500" />
               </div>
-              <h3 className="text-xl font-black text-white">¿Borrar usuario?</h3>
-              <p className="text-zinc-500 mt-2 text-sm">Esta acción es permanente y borrara todos sus datos de cromos.</p>
+              <h3 className="text-xl font-black text-white">{t('admin.delete_user_title')}</h3>
+              <p className="text-zinc-500 mt-2 text-sm">{t('admin.delete_user_desc')}</p>
               <div className="mt-8 flex flex-col gap-3">
-                <button onClick={() => deleteUser(confirmDelete)} className="w-full p-4 bg-red-600 text-white rounded-2xl font-black">BORRAR AHORA</button>
-                <button onClick={() => setConfirmDelete(null)} className="w-full p-4 bg-zinc-800 text-white rounded-2xl font-semibold">ME ARREPENTÍ</button>
+                <button onClick={() => deleteUser(confirmDelete)} className="w-full p-4 bg-red-600 text-white rounded-2xl font-black">{t('admin.delete_now')}</button>
+                <button onClick={() => setConfirmDelete(null)} className="w-full p-4 bg-zinc-800 text-white rounded-2xl font-semibold">{t('admin.regret')}</button>
               </div>
             </motion.div>
           </div>

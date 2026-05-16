@@ -287,7 +287,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1">
-                    <h4 className="text-sm font-bold text-white truncate">{user?.displayName || 'Usuario'}</h4>
+                    <h4 className="text-sm font-bold text-white truncate">{user?.displayName || (t('admin.users').slice(0,-1))}</h4>
                     <div className="flex flex-col items-end gap-1">
                       <span className="text-[10px] text-zinc-500">
                         {chat.updatedAt ? format(chat.updatedAt.toDate(), 'HH:mm') : ''}
@@ -309,12 +309,12 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                           ? "bg-red-500 text-white animate-pulse px-2" 
                           : "text-zinc-600 hover:text-red-500 hover:bg-red-500/10 md:opacity-0 group-hover:opacity-100"
                       )}
-                      title={deleteConfirmId === chat.id ? "Confirmar eliminar" : "Eliminar chat"}
+                      title={deleteConfirmId === chat.id ? t('chat.confirm_delete') : t('chat.delete_chat')}
                     >
                       {deleteConfirmId === chat.id ? (
                         <>
                           <Trash2 className="w-3 h-3" />
-                          <span className="text-[10px] font-bold">BORRAR</span>
+                          <span className="text-[10px] font-bold uppercase">{t('admin.delete')}</span>
                         </>
                       ) : (
                         <Trash2 className="w-3.5 h-3.5" />
@@ -327,7 +327,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
           })}
           {chats.length === 0 && (
             <div className="p-8 text-center text-zinc-500 text-sm">
-              No tienes chats activos. Ve a Intercambios para empezar una charla.
+              {t('chat.no_chats')}
             </div>
           )}
         </div>
@@ -353,7 +353,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                   {peerUser?.displayName}
                   {peerUser?.role === 'admin' && <ShieldCheck className="w-3 h-3 text-green-500" />}
                 </h3>
-                <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">En línea</p>
+                <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">{t('chat.online')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -365,7 +365,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                 )}
               >
                 <ArrowRightLeft className="w-3 h-3" />
-                Negociación
+                {t('chat.negotiation')}
                 {showTradeInfo ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3 transition-transform" />}
               </button>
               <button className="text-zinc-500 hover:text-white p-2">
@@ -387,69 +387,67 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                      <div className="space-y-2">
                        <div className="flex items-center gap-2 text-[10px] font-black text-green-500 uppercase tracking-widest mb-1">
                           <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                          Lo que tú le puedes dar:
+                          {t('market.they_need')}:
                        </div>
                        <div className="flex flex-wrap gap-1.5">
                          {tradeInfo.theyNeed.length > 0 ? tradeInfo.theyNeed.map(item => (
                            <span key={item.id} className="px-2.5 py-1 bg-zinc-900 border border-zinc-700/50 rounded-lg text-[10px] font-bold text-zinc-200">
                              {item.label}
                            </span>
-                         )) : <span className="text-[10px] text-zinc-600 italic">No tienes repetidas que necesite</span>}
+                         )) : <span className="text-[10px] text-zinc-600 italic">{t('chat.no_repeats_peer')}</span>}
                        </div>
                      </div>
                      <div className="space-y-2 border-l border-zinc-800 pl-4">
                        <div className="flex items-center gap-2 text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                          Lo que tiene para ti:
+                          {t('market.connected')}:
                        </div>
                        <div className="flex flex-wrap gap-1.5">
                          {tradeInfo.iNeed.length > 0 ? tradeInfo.iNeed.map(item => (
                            <span key={item.id} className="px-2.5 py-1 bg-zinc-900 border border-zinc-700/50 rounded-lg text-[10px] font-bold text-zinc-200">
                              {item.label}
                            </span>
-                         )) : <span className="text-[10px] text-zinc-600 italic">No tiene repetidas que te falten</span>}
+                         )) : <span className="text-[10px] text-zinc-600 italic">{t('chat.no_missing_peer')}</span>}
                        </div>
                      </div>
                    </div>
 
                    {(tradeInfo.iNeed.length > 0 || tradeInfo.theyNeed.length > 0) && (
                      <button 
-                       onClick={async () => {
-                         const userRarity = userProfile?.rarity || 'cualquier';
-                         const rarityData = RARITIES.find(r => r.id === userRarity);
-                         const userRarityName = rarityData ? rarityData.name : 'Cualquier color';
+                        onClick={async () => {
+                          const userRarity = userProfile?.rarity || 'cualquier';
+                          const peerRarity = peerUser?.rarity || 'cualquier';
 
-                         const peerRarity = peerUser?.rarity || 'cualquier';
-                         const rData = RARITIES.find(r => r.id === peerRarity);
-                         const peerRarityName = rData ? rData.name : 'Cualquier color';
+                          let tMsg = `${t('chat.proposal_intro')}\n\n`;
+                          tMsg += `${t('chat.collecting_rarity')} ${t(`rarity.${userRarity}`).toUpperCase()}.\n`;
+                          tMsg += `${t('chat.you_collecting_rarity')} ${t(`rarity.${peerRarity}`).toUpperCase()}?\n\n`;
 
-                         let t = `¡Hola! He revisado nuestras coincidencias.\n\nYo estoy coleccionando el álbum en rareza ${userRarityName.toUpperCase()}.\n¿Tú también lo haces en rareza ${peerRarityName.toUpperCase()}?\n\n`;
-                         if (tradeInfo.theyNeed.length > 0) {
-                           t += `👉 Te puedo dar: ${tradeInfo.theyNeed.slice(0, 5).map(i => i.label).join(', ')}${tradeInfo.theyNeed.length > 5 ? '...' : ''}\n`;
-                         }
-                         if (tradeInfo.iNeed.length > 0) {
-                           t += `👈 Me interesan: ${tradeInfo.iNeed.slice(0, 5).map(i => i.label).join(', ')}${tradeInfo.iNeed.length > 5 ? '...' : ''}\n`;
-                         }
-                         t += "\n¿Te interesa cambiar?";
-                         
-                         await addDoc(collection(db, 'chats', chatId!, 'messages'), {
-                           senderId: userProfile?.userId,
-                           text: t,
-                           createdAt: serverTimestamp()
-                         });
-                         
-                         await updateDoc(doc(db, 'chats', chatId!), {
-                           lastMessage: "Propuesta de intercambio enviada",
-                           updatedAt: serverTimestamp()
-                         });
-                         setShowTradeInfo(false);
-                       }}
-                       className="w-full py-2 bg-green-600/10 text-green-500 border border-green-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-600 hover:text-white transition-all"
-                     >
-                       Enviar propuesta automática
-                     </button>
+                          if (tradeInfo.theyNeed.length > 0) {
+                            tMsg += `👉 ${t('chat.i_can_give')} ${tradeInfo.theyNeed.slice(0, 5).map(i => i.label).join(', ')}${tradeInfo.theyNeed.length > 5 ? '...' : ''}\n`;
+                          }
+                          if (tradeInfo.iNeed.length > 0) {
+                            tMsg += `👈 ${t('chat.i_am_interested')} ${tradeInfo.iNeed.slice(0, 5).map(i => i.label).join(', ')}${tradeInfo.iNeed.length > 5 ? '...' : ''}\n`;
+                          }
+                          tMsg += `\n${t('chat.trade_interest')}`;
+                          
+                          await addDoc(collection(db, 'chats', chatId!, 'messages'), {
+                            senderId: userProfile?.userId,
+                            text: tMsg,
+                            createdAt: serverTimestamp()
+                          });
+                          
+                          await updateDoc(doc(db, 'chats', chatId!), {
+                            lastMessage: t('chat.proposal_sent'),
+                            updatedAt: serverTimestamp()
+                          });
+                          setShowTradeInfo(false);
+                        }}
+                        className="w-full py-2 bg-green-600/10 text-green-500 border border-green-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-600 hover:text-white transition-all"
+                      >
+                        {t('chat.send_proposal')}
+                      </button>
                    )}
-                </div>
+                 </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -490,7 +488,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                <input 
                  value={text}
                  onChange={(e) => setText(e.target.value)}
-                 placeholder="Escribe un mensaje..."
+                 placeholder={t('chat.type_message')}
                  className="flex-1 bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-6 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all placeholder:text-zinc-600"
                />
                <button 
@@ -510,8 +508,8 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
               <div className="w-20 h-20 bg-zinc-900 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl border border-zinc-800">
                 <MessageSquare className="w-10 h-10 text-zinc-700" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">Selecciona un chat</h3>
-              <p className="text-zinc-500 max-w-xs mx-auto">Selecciona una conversación del lateral o inicia una desde el Market.</p>
+              <h3 className="text-2xl font-bold text-white mb-2">{t('chat.select_chat')}</h3>
+              <p className="text-zinc-500 max-w-xs mx-auto">{t('chat.select_chat_desc')}</p>
            </div>
         </div>
       )}

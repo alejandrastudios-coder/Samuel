@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Download, Share, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export const InstallPrompt: React.FC = () => {
+  const { t } = useLanguage();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -63,7 +65,7 @@ export const InstallPrompt: React.FC = () => {
     if (!prompt) {
       // If we still don't have it, we show instructions anyway (fallback)
       if (!isIOS) {
-        alert('Para instalar manualmente: Pulsa los tres puntos (⋮) del navegador y selecciona "Instalar aplicación" o "Añadir a pantalla de inicio".');
+        alert(t('dash.pwa_manual_alert'));
       }
       return;
     }
@@ -101,7 +103,7 @@ export const InstallPrompt: React.FC = () => {
           <button 
             onClick={closePrompt}
             className="absolute top-4 right-4 p-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-full transition-all active:scale-90 z-20"
-            aria-label="Cerrar"
+            aria-label={t('album.close')}
           >
             <X className="w-5 h-5 text-zinc-300" />
           </button>
@@ -113,7 +115,7 @@ export const InstallPrompt: React.FC = () => {
               </div>
               
               <div className="flex-1">
-                <h3 className="text-white font-black text-lg uppercase italic tracking-tight">Instalar Aplicación</h3>
+                <h3 className="text-white font-black text-lg uppercase italic tracking-tight">{t('dash.pwa_title')}</h3>
               </div>
             </div>
 
@@ -124,17 +126,17 @@ export const InstallPrompt: React.FC = () => {
                     <X className="w-6 h-6 text-amber-500" />
                   </div>
                   <p className="text-amber-200 text-xs font-black uppercase tracking-widest leading-relaxed">
-                    BLOQUEADO EN VISTA PREVIA
+                    {t('dash.pwa_blocked_iframe')}
                   </p>
                   <p className="text-zinc-400 text-[11px] mt-2 font-medium">
-                    Apple no permite la instalación dentro de marcos. Debes pulsar el icono de <b>"Abrir en pestaña nueva"</b> (flecha hacia afuera) arriba a la derecha para continuar.
+                    {t('dash.pwa_iframe_desc')}
                   </p>
                 </div>
               ) : (
                 <p className="text-zinc-300 text-sm font-medium leading-relaxed">
                   {isIOS 
-                    ? 'Para instalar: pulsa el icono de "Compartir" y selecciona "Añadir a la pantalla de inicio".' 
-                    : 'Accede más rápido instalando la app en tu pantalla de inicio.'}
+                    ? t('dash.pwa_ios_manual')
+                    : t('dash.pwa_manual_desc')}
                 </p>
               )}
               
@@ -143,7 +145,7 @@ export const InstallPrompt: React.FC = () => {
                   onClick={handleInstallClick}
                   className="w-full py-4 bg-white text-black rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-white/10"
                 >
-                  Instalar Ahora
+                  {t('dash.pwa_install_now')}
                 </button>
               ) : (
                 <div className="space-y-6">
@@ -154,9 +156,9 @@ export const InstallPrompt: React.FC = () => {
                         <Share className="w-8 h-8 text-blue-600" />
                       </div>
                       <p className="text-white font-black text-sm uppercase tracking-widest leading-relaxed">
-                        1. USA <span className="text-blue-400 underline">SAFARI</span>
+                        1. {t('dash.pwa_ios_safari_only')}
                       </p>
-                      <p className="text-zinc-400 text-[10px] font-bold mt-1 uppercase">Solo funciona en el navegador Safari</p>
+                      <p className="text-zinc-400 text-[10px] font-bold mt-1 uppercase">{t('dash.pwa_ios_safari_only')}</p>
                     </div>
                   </div>
 
@@ -165,14 +167,14 @@ export const InstallPrompt: React.FC = () => {
                       <div className="w-12 h-12 bg-zinc-700 rounded-xl mb-4 flex items-center justify-center shadow-xl">
                         <Plus className="w-6 h-6 text-white" />
                       </div>
-                      <p className="text-blue-400 font-black text-[10px] uppercase tracking-widest mb-2">Bajo el icono compartir:</p>
+                      <p className="text-blue-400 font-black text-[10px] uppercase tracking-widest mb-2">{t('dash.pwa_ios_scroll_down')}</p>
                       <p className="text-zinc-200 font-bold text-xs uppercase tracking-[0.1em]">
-                        2. BAJA Y SELECCIONA:
+                        2. {t('dash.pwa_ios_step2')}:
                       </p>
                       <p className="text-white font-black text-sm uppercase tracking-widest mt-1 bg-white/5 px-4 py-2 rounded-xl border border-white/5 mt-2">
-                        "AÑADIR A INICIO"
+                        {t('dash.pwa_ios_add_home')}
                       </p>
-                      <p className="text-zinc-500 text-[9px] mt-2 font-bold uppercase">Si no lo ves, desliza hacia abajo en el menú</p>
+                      <p className="text-zinc-500 text-[9px] mt-2 font-bold uppercase">{t('dash.pwa_ios_not_found')}</p>
                     </div>
                   </div>
 
@@ -183,7 +185,7 @@ export const InstallPrompt: React.FC = () => {
                           try {
                             await navigator.share({
                               title: 'Stickers 2026',
-                              text: '¡Entra a stickers2026.app para coleccionar tus estampas!',
+                              text: t('dash.pwa_ios_share_text'),
                               url: window.location.origin,
                             });
                           } catch (err) {
@@ -194,10 +196,10 @@ export const InstallPrompt: React.FC = () => {
                       className="w-full py-5 bg-worldcup-blue text-white rounded-3xl font-black text-[12px] uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-worldcup-blue/30 border border-worldcup-blue/50 flex items-center justify-center gap-3"
                     >
                       <Share className="w-5 h-5" />
-                      ABRIR MENÚ DE INSTALACIÓN
+                      {t('dash.pwa_ios_open_menu')}
                     </button>
                     <p className="text-[9px] text-zinc-500 text-center font-bold uppercase tracking-widest italic mt-4 px-4">
-                      * El sitio web se descargará como una aplicación real en tu pantalla de inicio.
+                      {t('dash.pwa_ios_footer')}
                     </p>
                   </div>
 
@@ -205,7 +207,7 @@ export const InstallPrompt: React.FC = () => {
                     onClick={closePrompt}
                     className="w-full py-4 bg-zinc-900/50 text-zinc-400 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:text-white transition-all border border-zinc-800"
                   >
-                    Entendido, cerrar
+                    {t('dash.pwa_understood')}
                   </button>
                 </div>
               )}

@@ -326,8 +326,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               <ShieldCheck className="w-6 h-6 text-green-500" />
             </div>
             <div>
-              <h4 className="text-white font-black uppercase tracking-tight">Acceso de Administrador</h4>
-              <p className="text-zinc-500 text-xs font-medium">Samuel, tienes acceso total al sistema.</p>
+              <h4 className="text-white font-black uppercase tracking-tight">{t('admin.title')}</h4>
+              <p className="text-zinc-500 text-xs font-medium">{t('dash.admin_status')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -335,14 +335,14 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               onClick={() => navigate('/admin')}
               className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all active:scale-95 border border-zinc-700"
             >
-              IR AL PANEL CONTROL
+              {t('admin.title')}
             </button>
             {userProfile.role !== 'admin' && (
               <button 
                 onClick={async () => {
                   try {
                     await updateDoc(doc(db, 'users', userProfile.userId), { role: 'admin', status: 'approved' });
-                    alert('Rol de administrador restaurado. Por favor recarga la página.');
+                    alert(t('dash.restore_role_alert'));
                     window.location.reload();
                   } catch (e) {
                     console.error(e);
@@ -350,7 +350,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 }}
                 className="px-6 py-3 bg-green-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95"
               >
-                RESTAURAR ROL
+                {t('dash.restore_role')}
               </button>
             )}
           </div>
@@ -370,8 +370,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 <Smartphone className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h4 className="text-white font-black italic uppercase tracking-tight">Instala en tu iPhone</h4>
-                <p className="text-white/80 text-xs font-medium">Lleva tu álbum siempre contigo como una App.</p>
+                <h4 className="text-white font-black italic uppercase tracking-tight">{t('dash.pwa_title')}</h4>
+                <p className="text-white/80 text-xs font-medium">{t('dash.pwa_desc')}</p>
               </div>
             </div>
             <button 
@@ -381,7 +381,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               }}
               className="relative z-[70] px-6 py-3 bg-white text-blue-600 font-black text-[11px] uppercase tracking-widest rounded-full shadow-2xl active:scale-95 transition-all cursor-pointer ring-4 ring-white/30"
             >
-              INSTALAR AHORA
+              {t('nav.install')}
             </button>
           </div>
         </motion.div>
@@ -403,14 +403,14 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               className="fixed bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none"
             >
               <div className="bg-blue-600 text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest shadow-2xl">
-                Toca aquí abajo
+                {t('dash.pwa_touch_below')}
               </div>
               <ChevronRight className="w-10 h-10 text-blue-600 rotate-90" />
             </motion.div>
             <button 
               onClick={() => setIsIOSModalOpen(false)}
               className="absolute top-6 right-6 w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-all active:scale-90 z-20 shadow-lg"
-              aria-label="Cerrar"
+              aria-label={t('album.close')}
             >
               <X className="w-6 h-6" />
             </button>
@@ -419,14 +419,14 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               <div className="w-24 h-24 bg-blue-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border border-blue-500/20 shadow-xl shadow-blue-500/5">
                 <Smartphone className="w-12 h-12 text-blue-500" />
               </div>
-              <h3 className="text-3xl font-black text-white italic uppercase tracking-tight">Instalar en iOS</h3>
+              <h3 className="text-3xl font-black text-white italic uppercase tracking-tight">{t('dash.pwa_ios_title')}</h3>
               {window.self !== window.top ? (
                 <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
-                  <p className="text-amber-500 font-black text-[10px] uppercase tracking-widest">Atención</p>
-                  <p className="text-zinc-400 text-xs mt-1">Estás en vista previa. Toca el icono de "Nuev pestaña" arriba a la derecha para poder instalar.</p>
+                  <p className="text-amber-500 font-black text-[10px] uppercase tracking-widest">{t('dash.pwa_attention')}</p>
+                  <p className="text-zinc-400 text-xs mt-1">{t('dash.pwa_iframe_warning')}</p>
                 </div>
               ) : (
-                <p className="text-zinc-400 text-sm mt-3 font-medium">Lleva Stickers 2026 siempre contigo.</p>
+                <p className="text-zinc-400 text-sm mt-3 font-medium">{t('dash.pwa_ios_desc')}</p>
               )}
             </div>
 
@@ -437,9 +437,9 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   <div className="w-20 h-20 bg-white rounded-[1.5rem] mb-6 flex items-center justify-center shadow-2xl animate-bounce">
                     <ShareIcon className="w-10 h-10 text-blue-600" />
                   </div>
-                  <h4 className="text-white font-black text-lg uppercase tracking-widest leading-none">Paso 1</h4>
-                  <p className="text-blue-400 text-[10px] font-black mt-3 uppercase tracking-widest underline">¡Usa Navegador Safari!</p>
-                  <p className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-tight">Toca el icono de Compartir en la barra de Safari</p>
+                  <h4 className="text-white font-black text-lg uppercase tracking-widest leading-none">{t('dash.pwa_ios_step1')}</h4>
+                  <p className="text-blue-400 text-[10px] font-black mt-3 uppercase tracking-widest underline">{t('dash.pwa_ios_safari_only')}</p>
+                  <p className="text-zinc-400 text-xs font-bold mt-2 uppercase tracking-tight">{t('dash.pwa_ios_share_desc')}</p>
                 </div>
               </div>
 
@@ -448,12 +448,12 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   <div className="w-16 h-16 bg-zinc-700 rounded-[1.25rem] mb-6 flex items-center justify-center shadow-xl">
                     <Plus className="w-8 h-8 text-white" />
                   </div>
-                  <h4 className="text-zinc-300 font-bold text-sm uppercase tracking-widest leading-none">Paso 2</h4>
-                  <p className="text-zinc-500 text-[10px] uppercase font-bold mt-2">Baja en el menú y busca:</p>
+                  <h4 className="text-zinc-300 font-bold text-sm uppercase tracking-widest leading-none">{t('dash.pwa_ios_step2')}</h4>
+                  <p className="text-zinc-500 text-[10px] uppercase font-bold mt-2">{t('dash.pwa_ios_scroll_down')}</p>
                   <p className="text-white font-black text-md uppercase tracking-widest mt-3 bg-white/5 px-6 py-3 rounded-2xl border border-white/5">
-                    "Añadir a Inicio"
+                    {t('dash.pwa_ios_add_home')}
                   </p>
-                  <p className="text-zinc-500 text-[9px] mt-4 font-bold uppercase italic">¿No lo ves? Desliza el menú hacia arriba</p>
+                  <p className="text-zinc-500 text-[9px] mt-4 font-bold uppercase italic">{t('dash.pwa_ios_not_found')}</p>
                 </div>
               </div>
 
@@ -464,7 +464,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                       try {
                         await navigator.share({
                           title: 'Stickers 2026',
-                          text: '¡Instala la App de Estampas!',
+                          text: t('dash.pwa_ios_share_text'),
                           url: window.location.origin,
                         });
                       } catch (err) {
@@ -475,10 +475,10 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   className="w-full py-6 bg-blue-600 text-white rounded-[2rem] font-black text-[12px] uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 active:scale-95 transition-all flex items-center justify-center gap-4"
                 >
                   <ShareIcon className="w-6 h-6" />
-                  ABRIR MENÚ AHORA
+                  {t('dash.pwa_ios_open_menu')}
                 </button>
                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic mt-6 px-6 leading-relaxed">
-                  * Esto descargará la App directamente a tu pantalla de inicio sin usar la App Store.
+                  {t('dash.pwa_ios_footer')}
                 </p>
               </div>
             </div>
@@ -487,7 +487,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               onClick={() => setIsIOSModalOpen(false)}
               className="w-full py-5 bg-zinc-800 text-zinc-400 font-black uppercase tracking-[0.2em] text-[10px] rounded-[2rem] border border-zinc-700 hover:text-white transition-all"
             >
-              CERRAR GUÍA
+              {t('dash.pwa_close_guide')}
             </button>
           </motion.div>
         </div>
@@ -503,7 +503,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
             <div className="flex gap-2">
               <div className="flex items-center gap-2 px-3 py-1 bg-black/30 backdrop-blur-sm rounded-lg border border-white/5 mr-2">
                 <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" style={{ animationDuration: '3s' }} />
-                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">En Vivo</span>
+                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">{t('dash.live')}</span>
               </div>
               <button 
                 onClick={() => navigate('/market')}
@@ -515,7 +515,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                     {unreadCount}
                   </span>
                 )}
-                Chat
+                {t('nav.chat')}
               </button>
             </div>
           </div>
@@ -523,7 +523,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
             {t('dash.welcome')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-worldcup-red via-worldcup-green to-worldcup-blue animate-gradient-x">{userProfile?.displayName}</span>!
           </h2>
           <div className="flex flex-wrap items-center gap-3 mt-2">
-            <p className="text-zinc-400 font-medium whitespace-nowrap">Tu camino a la gloria eterna ha comenzado.</p>
+            <p className="text-zinc-400 font-medium whitespace-nowrap">{t('dash.path_to_glory')}</p>
             
             <button 
               onClick={() => setIsRarityModalOpen(true)}
@@ -532,7 +532,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 rarityData.color, rarityData.text, rarityData.border
               )}
             >
-              {t('nav.album')} {rarityData.name}
+              {t('nav.album')} {t(`rarity.${rarityData.id}`)}
               <Settings2 className="w-3 h-3 opacity-60" />
             </button>
 
@@ -550,7 +550,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               <div className="flex -space-x-1 mr-1">
                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse border border-green-400" />
               </div>
-              <span className="text-[9px] font-black text-green-500 tracking-widest uppercase italic">Conexión Segura de Sector Activa</span>
+              <span className="text-[9px] font-black text-green-500 tracking-widest uppercase italic">{t('dash.secure_connection')}</span>
             </div>
 
             <div className="flex items-center gap-1">
@@ -576,7 +576,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
             #{ownedCount}
           </div>
           <div className="pr-4">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold leading-none">Puntos</p>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold leading-none">{t('dash.points')}</p>
             <p className="text-lg font-black text-white leading-none mt-0.5">{ownedCount * 10}</p>
           </div>
         </div>
@@ -608,7 +608,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 {isClickable && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-950 border border-zinc-800 shadow-inner">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">Ver</span>
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">{t('dash.see')}</span>
                   </div>
                 )}
               </div>
@@ -618,7 +618,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                 <div className="flex items-baseline gap-1">
                   <p className="text-3xl font-black text-white italic">{stat.value}</p>
                   {stat.subValue && <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter">({stat.subValue})</span>}
-                  {stat.name === 'Repetidas' && <span className="text-[10px] text-amber-500 font-bold uppercase tracking-tighter">Gold</span>}
+                  {stat.name === t('dash.repeated') && <span className="text-[10px] text-amber-500 font-bold uppercase tracking-tighter">{t('dash.gold')}</span>}
                 </div>
               </div>
 
@@ -641,11 +641,11 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               <div className="flex items-center gap-4">
                 <div className="w-1.5 h-10 bg-gradient-to-b from-amber-500 to-amber-800 rounded-full" />
                 <div>
-                  <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">Podio Elite</h3>
+                  <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">{t('dash.elite_list')}</h3>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[10px] text-amber-500/80 font-black uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">Top 10 Global</span>
+                    <span className="text-[10px] text-amber-500/80 font-black uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">{t('dash.top_10')}</span>
                     <span className="text-[10px] text-zinc-500 font-black uppercase tracking-wider">
-                      {Object.keys(allUsers).length} Coleccionistas compitiendo
+                      {Object.keys(allUsers).length} {t('admin.users')}
                     </span>
                   </div>
                 </div>
@@ -691,68 +691,72 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                       )}
                     </div>
 
-                    <div className="min-w-0 flex-1 py-1">
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                        <p className={cn(
-                          "font-black uppercase tracking-tight drop-shadow-md",
-                          idx === 0 ? "text-white text-2xl sm:text-3xl leading-none" : "text-zinc-50 text-xl leading-none"
-                        )}>
-                          {item.user?.displayName}
-                        </p>
-                        <div className="flex items-center gap-1.5">
-                          {idx === 0 && (
-                            <div className="flex items-center gap-1 bg-amber-500 text-black px-3 py-1 rounded-full shadow-lg border border-amber-400">
-                              <Star className="w-2.5 h-2.5 fill-current" />
-                              <span className="text-[9px] font-bold uppercase tracking-widest">LEYENDA</span>
+                    <div className="min-w-0 flex-1 py-1 px-2">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className={cn(
+                            "font-black uppercase tracking-tight drop-shadow-sm",
+                            idx === 0 ? "text-white text-xl sm:text-2xl" : 
+                            idx < 3 ? "text-zinc-50 text-lg" : 
+                            "text-zinc-200 text-base"
+                          )}>
+                            {item.user?.displayName || t('admin.no_user_found')}
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            {idx === 0 && (
+                              <div className="flex items-center gap-1 bg-amber-500 text-black px-2 py-0.5 rounded-md shadow-lg border border-amber-400">
+                                <Star className="w-2.5 h-2.5 fill-current" />
+                                <span className="text-[8px] font-black uppercase tracking-tighter">{t('dash.legend')}</span>
+                              </div>
+                            )}
+                            {idx === 1 && <span className="text-[8px] border border-zinc-400 bg-zinc-950 text-zinc-100 px-2 py-0.5 rounded-md font-black uppercase tracking-tighter">{t('dash.elite')}</span>}
+                            {idx === 2 && <span className="text-[8px] border border-amber-800 bg-zinc-950 text-amber-500 px-2 py-0.5 rounded-md font-black uppercase tracking-tighter">{t('dash.pro')}</span>}
+                          </div>
+                        </div>
+
+                        {/* Location and Groups */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {item.user?.residingCountry && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/40 border border-zinc-800/50" title={item.user.residingCountry}>
+                              {FLAGS[item.user.residingCountry as keyof typeof FLAGS] ? (
+                                <img src={FLAGS[item.user.residingCountry as keyof typeof FLAGS]} className="w-3 h-2 object-cover rounded-[1px]" alt="" referrerPolicy="no-referrer" />
+                              ) : (
+                                <MapPin className="w-2 h-2 text-worldcup-red" />
+                              )}
+                              <span className="text-[9px] text-zinc-400 font-black uppercase italic tracking-tighter">{item.user.residingCountry}</span>
                             </div>
                           )}
-                          {idx === 1 && <span className="text-[9px] border-2 border-zinc-400 bg-zinc-950 text-zinc-100 px-3 py-1 rounded-full font-black uppercase tracking-widest shadow-xl">ELITE</span>}
-                          {idx === 2 && <span className="text-[9px] border-2 border-amber-800 bg-zinc-950 text-amber-500 px-3 py-1 rounded-full font-black uppercase tracking-widest shadow-xl">PRO</span>}
+                          {item.user?.groupIds?.slice(0, 3).map((gid: string) => {
+                            const group = groups.find(g => g.id === gid);
+                            if (!group) return null;
+                            return (
+                              <div 
+                                key={gid}
+                                className="px-2 py-0.5 rounded-md text-[8px] font-black uppercase italic tracking-widest border"
+                                style={{ backgroundColor: `${group.color}15`, color: group.color, borderColor: `${group.color}40` }}
+                              >
+                                {group.name}
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-
-                      {/* Location and Groups */}
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        {item.user?.residingCountry && (
-                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 shadow-sm" title={item.user.residingCountry}>
-                            {FLAGS[item.user.residingCountry as keyof typeof FLAGS] ? (
-                              <img src={FLAGS[item.user.residingCountry as keyof typeof FLAGS]} className="w-3 h-2 object-cover rounded-[1px]" alt="" referrerPolicy="no-referrer" />
-                            ) : (
-                              <MapPin className="w-2 h-2 text-worldcup-red" />
-                            )}
-                            <span className="text-[8px] text-zinc-400 font-black uppercase italic tracking-tighter">{item.user.residingCountry}</span>
+                        
+                        {/* Stats Row */}
+                        <div className="flex items-center gap-3 mt-1 underline-offset-4 decoration-zinc-800">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-zinc-500 font-black uppercase tracking-tight">{t('nav.album')}:</span>
+                            <span className="text-xs text-zinc-200 font-black italic">{item.owned}</span>
                           </div>
-                        )}
-                        {item.user?.groupIds?.slice(0, 2).map((gid: string) => {
-                          const group = groups.find(g => g.id === gid);
-                          if (!group) return null;
-                          return (
-                            <div 
-                              key={gid}
-                              className="px-2 py-0.5 rounded-md text-[7px] font-black uppercase italic tracking-widest border"
-                              style={{ backgroundColor: `${group.color}15`, color: group.color, borderColor: `${group.color}40` }}
-                            >
-                              {group.name}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Color-coded Minimalist KPIs with Labels */}
-                      <div className="flex items-center gap-2 sm:gap-3 mt-3 flex-wrap">
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-zinc-950/50 border border-zinc-800 shadow-inner group-hover:border-zinc-700 transition-colors">
-                          <span className="text-[8px] text-zinc-500 font-black uppercase tracking-tighter">Album</span>
-                          <span className="text-xs text-white font-black italic">{item.owned}</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-worldcup-green/10 border border-worldcup-green/20 shadow-sm transition-transform group-hover:scale-105">
-                          <div className="w-1.5 h-1.5 rounded-full bg-worldcup-green shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                          <span className="text-[8px] text-worldcup-green font-black uppercase tracking-tighter">FWC</span>
-                          <span className="text-xs text-white font-black italic">{item.fwcOwned}</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-worldcup-red/10 border border-worldcup-red/20 shadow-sm transition-transform group-hover:scale-105">
-                          <div className="w-1.5 h-1.5 rounded-full bg-worldcup-red shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                          <span className="text-[8px] text-worldcup-red font-black uppercase tracking-tighter">CC</span>
-                          <span className="text-xs text-white font-black italic">{item.ccOwned}</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1 h-1 rounded-full bg-worldcup-green" />
+                            <span className="text-[9px] text-zinc-500 font-black uppercase tracking-tight">FWC:</span>
+                            <span className="text-xs text-zinc-200 font-black italic">{item.fwcOwned}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1 h-1 rounded-full bg-worldcup-red" />
+                            <span className="text-[9px] text-zinc-500 font-black uppercase tracking-tight">CC:</span>
+                            <span className="text-xs text-zinc-200 font-black italic">{item.ccOwned}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -776,7 +780,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                         idx === 1 ? "bg-zinc-100/10 text-zinc-300 border-zinc-100/20" :
                         "bg-amber-900/20 text-amber-600 border-amber-900/30"
                       )}>
-                        {idx === 0 ? "Oro" : idx === 1 ? "Plata" : "Bronce"}
+                        {idx === 0 ? t('dash.gold') : idx === 1 ? t('dash.silver') : t('dash.bronze')}
                       </div>
                     )}
                   </div>
@@ -790,15 +794,15 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   <Star className="w-6 h-6 text-amber-500" />
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-sm text-white font-black uppercase tracking-tight">¡Sigue escalando!</p>
-                  <p className="text-zinc-500 text-xs font-medium">Estás compitiendo contra {Object.keys(allUsers).length} coleccionistas activos.</p>
+                  <p className="text-sm text-white font-black uppercase tracking-tight">{t('dash.keep_climbing')}</p>
+                  <p className="text-zinc-500 text-xs font-medium">{t('dash.competing_against').replace('{count}', Object.keys(allUsers).length.toString())}</p>
                 </div>
               </div>
               <button 
                 onClick={() => navigate('/market')}
                 className="w-full sm:w-auto px-8 py-3.5 bg-worldcup-green text-black font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-xl shadow-worldcup-green/20 hover:scale-105 active:scale-95 transition-all"
               >
-                Buscar Intercambios
+                {t('dash.search_exchanges')}
               </button>
             </div>
           </div>
@@ -812,17 +816,17 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-2 h-8 bg-worldcup-green rounded-full" />
-              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Estado de Colección</h3>
+              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">{t('nav.status')}</h3>
             </div>
             
             <div className="space-y-6">
               <div className="flex justify-between items-end">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] block">Progreso Local</span>
+                  <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] block">{t('nav.home')}</span>
                   <span className="text-5xl font-black text-white italic tracking-tighter leading-none">{completionRate}%</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] block">Faltantes</span>
+                  <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] block">{t('dash.missing')}</span>
                   <span className="text-5xl font-black text-worldcup-red italic tracking-tighter leading-none">{missingCount}</span>
                 </div>
               </div>
@@ -844,7 +848,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   <TrendingUp className="w-5 h-5 text-worldcup-green" />
                 </div>
                 <p className="text-sm text-zinc-400 font-medium leading-relaxed">
-                  Estás a <span className="text-white font-bold">{missingCount}</span> estampas de completar la historia. Cada intercambio te acerca más.
+                  {t('dash.history_stats').replace('{count}', missingCount.toString())}
                 </p>
               </div>
             </div>
@@ -857,14 +861,14 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-2 h-8 bg-worldcup-blue rounded-full" />
-              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Siguientes Objetivos</h3>
+              <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">{t('dash.next_objectives')}</h3>
             </div>
             
             <ul className="space-y-3">
               {[
-                { text: 'Explorar Market de Intercambios', icon: Repeat, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-                { text: 'Sincronizar nuevas estampas', icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10' },
-                { text: 'Iniciar chat con coleccionistas', icon: MessageCircle, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+                { text: t('dash.obj_market'), icon: Repeat, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+                { text: t('dash.obj_sync'), icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-400/10' },
+                { text: t('dash.obj_chat'), icon: MessageCircle, color: 'text-blue-400', bg: 'bg-blue-400/10' },
               ].map((item, i) => (
                 <li 
                   key={i} 
@@ -875,7 +879,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   </div>
                   <div className="flex-1">
                     <span className="text-sm font-bold text-zinc-200 block group-hover:text-white transition-colors">{item.text}</span>
-                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Acción Recomendada</span>
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">{t('dash.action_recommended')}</span>
                   </div>
                   <ArrowRightLeft className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
                 </li>
@@ -912,7 +916,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   <MapPin className="w-8 h-8 text-worldcup-red" />
                 </div>
                 <h3 className="text-2xl font-black text-white italic uppercase tracking-tight">{t('admin.country')}</h3>
-                <p className="text-zinc-500 text-xs mt-2 font-medium">Actualiza tu ubicación actual</p>
+                <p className="text-zinc-500 text-xs mt-2 font-medium">{t('dash.update_location')}</p>
               </div>
 
               <div className="max-h-[50vh] overflow-y-auto no-scrollbar grid grid-cols-1 gap-2">
@@ -956,7 +960,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                   <Star className="w-8 h-8 text-worldcup-green" />
                 </div>
                 <h3 className="text-2xl font-black text-white italic uppercase tracking-tight">{t('dash.rarity')}</h3>
-                <p className="text-zinc-500 text-xs mt-2 font-medium">{t('dash.edit_rarity')}</p>
+                <p className="text-zinc-500 text-xs mt-2 font-medium">{t('dash.rarity_edit_desc')}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
@@ -977,9 +981,11 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                       </div>
                       <div className="text-left">
                         <p className={cn("font-black uppercase text-sm leading-tight", currentRarity === r.id ? "text-white" : "text-zinc-300 group-hover:text-white")}>
-                          {r.name}
+                          {t(`rarity.${r.id}`)}
                         </p>
-                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{r.label}</p>
+                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                          {t(`rarity.label_${r.id}`)}
+                        </p>
                       </div>
                     </div>
                     {currentRarity === r.id ? (
@@ -998,7 +1004,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
               </div>
               
               <p className="text-[9px] text-zinc-600 italic mt-6 text-center px-4 leading-relaxed">
-                * Cambiar la rareza afectará cómo te ven otros coleccionistas en el Market y el chat. No afecta tu progreso total.
+                {t('dash.rarity_warning')}
               </p>
             </motion.div>
           </div>

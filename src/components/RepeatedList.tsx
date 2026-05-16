@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Repeat, ChevronRight } from 'lucide-react';
 import { TEAMS, FLAGS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId } from '../constants';
 import { cn } from '../lib/utils';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface RepeatedListProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface RepeatedListProps {
 }
 
 export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
+  const { t } = useLanguage();
   const repeatedByTeam = useMemo(() => {
     const result: { team: string; stickers: { id: string; num: number; count: number }[] }[] = [];
 
@@ -88,8 +90,8 @@ export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
             {/* Header */}
             <div className="p-8 pb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Tus Repetidas</h3>
-                <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mt-1">Inventario por Países</p>
+                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">{t('repeated.title')}</h3>
+                <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mt-1">{t('repeated.inventory')}</p>
               </div>
               <button
                 onClick={onClose}
@@ -107,8 +109,8 @@ export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
                     <Repeat className="w-10 h-10 text-zinc-700" />
                   </div>
                   <div>
-                    <h4 className="text-xl font-black text-white italic uppercase">Sin repetidas aún</h4>
-                    <p className="text-zinc-500 max-w-xs mx-auto mt-2">¡Sigue coleccionando para empezar a intercambiar!</p>
+                    <h4 className="text-xl font-black text-white italic uppercase">{t('repeated.no_repeats_yet')}</h4>
+                    <p className="text-zinc-500 max-w-xs mx-auto mt-2">{t('repeated.keep_collecting')}</p>
                   </div>
                 </div>
               ) : (
@@ -129,27 +131,27 @@ export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
                           <div>
                             <h4 className="text-lg font-black text-white italic tracking-tighter uppercase">{group.team}</h4>
                             <div className="flex items-center gap-2">
-                              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{group.stickers.length} {group.stickers.length === 1 ? 'modelo' : 'modelos'}</p>
+                              <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{group.stickers.length} {group.stickers.length === 1 ? t('repeated.model') : t('repeated.models')}</p>
                               <span className={cn(
                                 "text-[8px] font-black uppercase tracking-tighter px-1 rounded",
                                 (() => {
                                   let teamOwned = 0;
-                                  for (let i = 1; i <= (group.team === 'FWC' ? FWC_COUNT : group.team === 'Coca-Cola' ? COCA_COLA_COUNT : STICKERS_PER_TEAM); i++) {
-                                    const id = group.team === 'FWC' ? `UFW-${i}` : group.team === 'Coca-Cola' ? `extra-${i}` : `${group.team}-${i}`;
+                                  for (let i = 1; i <= (group.team === 'FWC' || group.team === 'FWC' ? FWC_COUNT : group.team === 'Coca-Cola' || group.team === t('album.coca_cola') ? COCA_COLA_COUNT : STICKERS_PER_TEAM); i++) {
+                                    const id = group.team === 'FWC' ? `UFW-${i}` : (group.team === 'Coca-Cola' || group.team === t('album.coca_cola')) ? `extra-${i}` : `${group.team}-${i}`;
                                     if ((stickers[id] || 0) >= 1) teamOwned++;
                                   }
-                                  const total = group.team === 'FWC' ? FWC_COUNT : group.team === 'Coca-Cola' ? COCA_COLA_COUNT : STICKERS_PER_TEAM;
+                                  const total = group.team === 'FWC' ? FWC_COUNT : (group.team === 'Coca-Cola' || group.team === t('album.coca_cola')) ? COCA_COLA_COUNT : STICKERS_PER_TEAM;
                                   return teamOwned === total ? "bg-green-500/10 text-green-500" : "bg-blue-500/10 text-blue-500";
                                 })()
                               )}>
                                 {(() => {
                                   let teamOwned = 0;
-                                  for (let i = 1; i <= (group.team === 'FWC' ? FWC_COUNT : group.team === 'Coca-Cola' ? COCA_COLA_COUNT : STICKERS_PER_TEAM); i++) {
-                                    const id = group.team === 'FWC' ? `UFW-${i}` : group.team === 'Coca-Cola' ? `extra-${i}` : `${group.team}-${i}`;
+                                  for (let i = 1; i <= (group.team === 'FWC' ? FWC_COUNT : (group.team === 'Coca-Cola' || group.team === t('album.coca_cola')) ? COCA_COLA_COUNT : STICKERS_PER_TEAM); i++) {
+                                    const id = (group.team === 'FWC') ? `UFW-${i}` : (group.team === 'Coca-Cola' || group.team === t('album.coca_cola')) ? `extra-${i}` : `${group.team}-${i}`;
                                     if ((stickers[id] || 0) >= 1) teamOwned++;
                                   }
-                                  const total = group.team === 'FWC' ? FWC_COUNT : group.team === 'Coca-Cola' ? COCA_COLA_COUNT : STICKERS_PER_TEAM;
-                                  return teamOwned === total ? 'Completo' : 'Incompleto';
+                                  const total = group.team === 'FWC' ? FWC_COUNT : (group.team === 'Coca-Cola' || group.team === t('album.coca_cola')) ? COCA_COLA_COUNT : STICKERS_PER_TEAM;
+                                  return teamOwned === total ? t('repeated.complete') : t('repeated.incomplete');
                                 })()}
                               </span>
                             </div>
@@ -188,8 +190,8 @@ export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
                     !
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white leading-tight">¿Listo para cambiar?</p>
-                    <p className="text-xs text-zinc-400 font-medium">Ve al Market para encontrar socios.</p>
+                    <p className="text-sm font-bold text-white leading-tight">{t('repeated.ready_to_trade')}</p>
+                    <p className="text-xs text-zinc-400 font-medium">{t('repeated.go_to_market')}</p>
                   </div>
                 </div>
                 <ChevronRight className="w-6 h-6 text-zinc-600" />

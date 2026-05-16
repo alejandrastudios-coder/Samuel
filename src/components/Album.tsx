@@ -100,7 +100,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
     }));
 
     list.push({ id: 'FWC', name: 'FWC', count: FWC_COUNT, type: 'special' });
-    list.push({ id: 'CC', name: 'Coca Cola', count: COCA_COLA_COUNT, type: 'special' });
+    list.push({ id: 'CC', name: t('album.coca_cola'), count: COCA_COLA_COUNT, type: 'special' });
     
     return list;
   }, []);
@@ -296,7 +296,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-[10px] text-zinc-500 uppercase tracking-tighter font-bold">
-                        {ownedInGroup}/{group.count} {t('dash.figures')}
+                        {ownedInGroup}/{group.count} {t('album.figures')}
                       </p>
                       <span className={cn(
                         "text-[9px] font-black uppercase tracking-tighter px-1 rounded",
@@ -416,7 +416,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                     {selectedSticker.group.name} #{selectedSticker.num}
                   </h4>
                   <p className="text-sm text-zinc-500 font-bold uppercase tracking-widest mt-1">
-                    Tienes {(normalizedMyStickers[normalizeStickerId(selectedSticker.id)] || 0)} {(normalizedMyStickers[normalizeStickerId(selectedSticker.id)] || 0) === 1 ? 'copia' : 'copias'}
+                    {t('album.owned')} {(normalizedMyStickers[normalizeStickerId(selectedSticker.id)] || 0)} {(normalizedMyStickers[normalizeStickerId(selectedSticker.id)] || 0) === 1 ? t('album.copy') : t('album.copies')}
                   </p>
                 </div>
               </div>
@@ -428,14 +428,14 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                   className="flex items-center justify-center gap-3 py-6 bg-zinc-900 border border-zinc-800 rounded-[2rem] text-white font-black text-lg transition-all active:scale-95 disabled:opacity-20 disabled:active:scale-100"
                 >
                   <span className="text-3xl">-</span>
-                  RESTAR
+                  {t('album.subtract')}
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleSticker(selectedSticker.id); }}
                   className="flex items-center justify-center gap-3 py-6 bg-white text-black rounded-[2rem] font-black text-lg transition-all active:scale-95"
                 >
                   <span className="text-3xl">+</span>
-                  SUMAR
+                  {t('album.add')}
                 </button>
               </div>
 
@@ -443,7 +443,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                 onClick={() => setSelectedSticker(null)}
                 className="w-full mt-6 py-2 text-zinc-500 font-black uppercase text-[10px] tracking-[0.2em]"
               >
-                Cerrar Panel
+                {t('album.close_panel')}
               </button>
             </motion.div>
           </>
@@ -468,13 +468,13 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
             >
               <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/20">
                 <div>
-                  <h3 className="text-xl font-bold text-white">¿Quién la tiene repetida?</h3>
+                  <h3 className="text-xl font-bold text-white">{t('album.who_has_it')}</h3>
                   <p className="text-xs text-zinc-500 mt-0.5">
                     {(() => {
                       const id = matchingUsers[0]?.stickerId;
                       if (!id) return '...';
                       const [teamName, num] = id.split('-');
-                      return `Estampa ${teamName} ${num}`;
+                      return `${t('album.sticker')} ${teamName} ${num}`;
                     })()}
                   </p>
                 </div>
@@ -487,7 +487,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                 {loadingMatches ? (
                   <div className="py-12 flex flex-col items-center gap-4 text-zinc-500">
                     <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-xs font-bold uppercase tracking-widest">Buscando Coleccionistas...</p>
+                    <p className="text-xs font-bold uppercase tracking-widest">{t('album.searching')}</p>
                   </div>
                 ) : matchingUsers.length > 0 ? (
                   <div className="space-y-4">
@@ -527,9 +527,9 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                               const [teamId, num] = match.stickerId.split('-');
                               let label = teamId;
                               if (teamId === 'FWC' || teamId === 'UFW') label = 'FWC';
-                              if (teamId === 'CC' || teamId === 'COCA-COLA') label = 'Coca Cola';
+                              if (teamId === 'CC' || teamId === 'COCA-COLA') label = t('album.coca_cola');
                               
-                              const initialMessage = `¡Hola! Vi que tienes la estampa de ${label} ${num} repetida y me interesa.`;
+                              const initialMessage = `${t('chat.album_intro_base')} ${label} ${num} ${t('chat.album_interested')}`;
                               await setDoc(chatRef, {
                                 participants,
                                 lastMessage: initialMessage,
@@ -559,7 +559,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                             navigate(`/chat/${chatId}`);
                           } catch (error) {
                             console.error("Error starting chat from album:", error);
-                            alert("Error al iniciar el chat.");
+                            alert(t('chat.start_error'));
                           }
                         }}
                           className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 active:scale-95"
@@ -574,8 +574,8 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                     <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
                        <Repeat className="w-8 h-8 opacity-20" />
                     </div>
-                    <p className="text-sm font-medium">Nadie tiene esta estampa repetida aún.</p>
-                    <p className="text-[10px] uppercase mt-1 tracking-widest">Sigue intentando más tarde</p>
+                    <p className="text-sm font-medium">{t('album.no_one_has_it')}</p>
+                    <p className="text-[10px] uppercase mt-1 tracking-widest">{t('album.keep_trying')}</p>
                   </div>
                 )}
               </div>
@@ -585,7 +585,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                   onClick={() => setIsMatchModalOpen(false)}
                   className="w-full py-4 bg-zinc-800 text-white rounded-2xl font-bold text-sm tracking-widest uppercase hover:bg-zinc-700 transition-colors"
                 >
-                  Cerrar
+                  {t('album.close')}
                 </button>
               </div>
             </motion.div>

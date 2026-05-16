@@ -91,7 +91,7 @@ function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, o
         <div className="flex items-center gap-4 md:gap-8 overflow-x-auto no-scrollbar">
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <WorldCupBall className="w-10 h-10" />
-            <span className="hidden sm:inline font-black text-sm tracking-tighter uppercase text-white">Mi Álbum <span className="text-worldcup-green">26</span></span>
+            <span className="hidden sm:inline font-black text-sm tracking-tighter uppercase text-white">{t('app.name')} <span className="text-worldcup-green">26</span></span>
           </Link>
           
           <nav className="flex items-center gap-1">
@@ -147,7 +147,7 @@ function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, o
           <button 
             onClick={onSignOut}
             className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-            title="Sali"
+            title={t('app.logout_title')}
           >
             <LogOut className="w-5 h-5" />
           </button>
@@ -160,6 +160,7 @@ function TopNav({ userProfile, onSignOut }: { userProfile: UserProfile | null, o
 
 function AuthGuard({ children, userProfile, profileLoading, logout }: { children: React.ReactNode, userProfile: UserProfile | null, profileLoading: boolean, logout: () => void }) {
   const [user, loading] = useAuthState(auth);
+  const { t } = useLanguage();
 
   if (loading || profileLoading) return (
     <div className="h-screen w-full flex items-center justify-center bg-zinc-950">
@@ -176,14 +177,14 @@ function AuthGuard({ children, userProfile, profileLoading, logout }: { children
          <div className="max-w-md w-full glass-panel p-10 rounded-[2.5rem] flex flex-col items-center gap-6 text-center">
            <WorldCupBall className="w-16 h-16" animate />
            <div>
-             <h2 className="text-2xl font-black text-white mb-2">PERFIL NO ENCONTRADO</h2>
-             <p className="text-zinc-500 text-sm font-bold uppercase tracking-widest">No pudimos cargar tus datos de usuario.</p>
+             <h2 className="text-2xl font-black text-white mb-2">{t('app.profile_not_found')}</h2>
+             <p className="text-zinc-500 text-sm font-bold uppercase tracking-widest">{t('app.profile_error')}</p>
            </div>
            <button 
              onClick={logout}
              className="w-full py-4 bg-red-500/10 text-red-500 rounded-2xl font-bold hover:bg-red-500/20 transition-all uppercase tracking-widest mt-4"
            >
-             Regresar al Login
+             {t('app.back_to_login')}
            </button>
          </div>
       </div>
@@ -195,15 +196,15 @@ function AuthGuard({ children, userProfile, profileLoading, logout }: { children
       <div className="h-screen w-full flex items-center justify-center bg-zinc-950 p-6">
         <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 p-10 rounded-[2.5rem] shadow-2xl text-center">
           <Clock className="w-20 h-20 text-amber-500 mx-auto mb-6 opacity-80" />
-          <h2 className="text-3xl font-black text-white mb-4 uppercase tracking-tight">Acceso Pendiente</h2>
+          <h2 className="text-3xl font-black text-white mb-4 uppercase tracking-tight">{t('app.pending_access')}</h2>
           <p className="text-zinc-400 mb-8 text-lg">
-            Tu cuenta ha sido registrada con éxito, pero un administrador debe aprobar tu acceso. Por favor, vuelve más tarde.
+            {t('app.pending_desc')}
           </p>
           <button 
             onClick={logout}
             className="w-full py-4 bg-zinc-800 text-white rounded-2xl font-bold hover:bg-zinc-700 transition-colors uppercase tracking-widest"
           >
-            Cerrar Sesión
+            {t('app.logout')}
           </button>
         </div>
       </div>
@@ -217,6 +218,7 @@ export default function App() {
   const [user] = useAuthState(auth);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (user && 'Notification' in window) {
@@ -280,8 +282,12 @@ export default function App() {
           playNotificationSound();
           
           if (Notification.permission === 'granted') {
-            new Notification('Stickers 2026', {
-              body: unreadTotal === 1 ? 'Tienes 1 mensaje nuevo' : `Tienes ${unreadTotal} mensajes nuevos`,
+            const bodyText = unreadTotal === 1 
+              ? t('app.new_message') 
+              : t('app.new_messages').replace('{count}', unreadTotal.toString());
+
+            new Notification(t('app.notification_title'), {
+              body: bodyText,
               icon: 'https://cdn-icons-png.flaticon.com/512/1165/1165187.png',
               tag: 'new-message', // Prevents flooding
               renotify: true
@@ -321,36 +327,34 @@ export default function App() {
   };
 
   return (
-    <LanguageProvider>
-      <BrowserRouter>
-        <div className="min-h-[100dvh] bg-zinc-950 text-white font-sans selection:bg-green-500/30 selection:text-green-500 flex flex-col">
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/*" element={
-              <AuthGuard userProfile={userProfile} profileLoading={profileLoading} logout={handleLogout}>
-                <TopNav userProfile={userProfile} onSignOut={handleLogout} />
-                <main className="flex-1 overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))] h-[100dvh]">
-                  <div className="max-w-7xl mx-auto p-4 md:p-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-                     <Routes>
-                        <Route path="/" element={<Dashboard userProfile={userProfile} />} />
-                        <Route path="/album" element={<Album userProfile={userProfile} />} />
-                        <Route path="/market" element={<Marketplace userProfile={userProfile} />} />
-                        <Route path="/chat" element={<Chat userProfile={userProfile} />} />
-                        <Route path="/chat/:chatId" element={<Chat userProfile={userProfile} />} />
-                        {userProfile?.role === 'admin' && (
-                          <Route path="/admin" element={<AdminPanel userProfile={userProfile} />} />
-                        )}
-                        <Route path="*" element={<Navigate to="/" />} />
-                     </Routes>
-                     <InstallPrompt />
-                  </div>
-                </main>
-              </AuthGuard>
-            } />
-          </Routes>
-        </div>
-      </BrowserRouter>
-    </LanguageProvider>
+    <BrowserRouter>
+      <div className="min-h-[100dvh] bg-zinc-950 text-white font-sans selection:bg-green-500/30 selection:text-green-500 flex flex-col">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/*" element={
+            <AuthGuard userProfile={userProfile} profileLoading={profileLoading} logout={handleLogout}>
+              <TopNav userProfile={userProfile} onSignOut={handleLogout} />
+              <main className="flex-1 overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))] h-[100dvh]">
+                <div className="max-w-7xl mx-auto p-4 md:p-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                   <Routes>
+                      <Route path="/" element={<Dashboard userProfile={userProfile} />} />
+                      <Route path="/album" element={<Album userProfile={userProfile} />} />
+                      <Route path="/market" element={<Marketplace userProfile={userProfile} />} />
+                      <Route path="/chat" element={<Chat userProfile={userProfile} />} />
+                      <Route path="/chat/:chatId" element={<Chat userProfile={userProfile} />} />
+                      {userProfile?.role === 'admin' && (
+                        <Route path="/admin" element={<AdminPanel userProfile={userProfile} />} />
+                      )}
+                      <Route path="*" element={<Navigate to="/" />} />
+                   </Routes>
+                   <InstallPrompt />
+                </div>
+              </main>
+            </AuthGuard>
+          } />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }
 
