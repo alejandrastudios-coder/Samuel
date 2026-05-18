@@ -126,6 +126,7 @@ export const translations: Translations = {
   'market.shared_sector': { es: 'Sector compartido', en: 'Shared sector', pt: 'Setor compartilhado' },
   'market.same_country': { es: 'Mismo país', en: 'Same country', pt: 'Mesmo país' },
   'market.view_user': { es: 'Ver Usuario', en: 'View User', pt: 'Ver Usuário' },
+  'market.sticker_count': { es: 'Barajitas', en: 'Stickers', pt: 'Figurinhas' },
 
   // Chat
   'chat.title': { es: 'MENSAJES', en: 'MESSAGES', pt: 'MENSAGENS' },
@@ -255,13 +256,14 @@ export const translations: Translations = {
   'chat.recommended_swap': { es: 'Intercambio Recomendado', en: 'Recommended Swap', pt: 'Troca Recomendada' },
   'chat.compatible_cards': { es: 'Cartas Compatibles', en: 'Compatible Cards', pt: 'Cartas Compatíveis' },
   'chat.album_improvement': { es: 'Mejoras para tu Álbum', en: 'Album Improvements', pt: 'Melhorias para seu Álbum' },
-  'chat.confirm_exchange': { es: 'CONFIRMAR INTERCAMBIO', en: 'CONFIRM EXCHANGE', pt: 'CONFIRMAR TROCA' },
+  'chat.confirm_exchange': { es: 'CONFIRMAR', en: 'CONFIRM', pt: 'CONFIRMAR' },
   'chat.cancel_negotiation': { es: 'CANCELAR', en: 'CANCEL', pt: 'CANCELAR' },
   'chat.your_offering_to': { es: 'Tu oferta para', en: 'Your offering to', pt: 'Sua oferta para' },
   'chat.select_stickers_to_give': { es: 'Selecciona las barajitas que quieres entregar', en: 'Select stickers you want to give', pt: 'Selecione as figurinhas que deseja entregar' },
   'chat.receiving_from': { es: 'Recibirás de', en: 'You will receive from', pt: 'Você receberá de' },
   'chat.select_stickers_to_receive': { es: 'Selecciona las barajitas que necesitas de su lista', en: 'Select stickers you need from their list', pt: 'Selecione as figurinhas que você precisa da lista dele' },
   'chat.selected': { es: 'Seleccionadas', en: 'Selected', pt: 'Selecionadas' },
+  'chat.select': { es: 'SELECCIONAR', en: 'SELECT', pt: 'SELECIONAR' },
   'chat.impact_new': { es: '¡Nueva!', en: 'New!', pt: 'Nova!' },
   'chat.impact_complete': { es: '¡Completas!', en: 'Complete!', pt: 'Completa!' },
   'login.success_pending': { es: 'Registro exitoso. Tu cuenta está pendiente de aprobación.', en: 'Registration successful. Your account is pending approval.', pt: 'Registro bem-sucedido. Sua conta está pendente de aprovação.' },

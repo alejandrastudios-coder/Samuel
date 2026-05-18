@@ -283,29 +283,27 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50">
-                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50 flex flex-col items-center justify-center text-center">
+                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                   <ArrowRightLeft className="w-3 h-3" /> {t('market.connected')}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {match.iNeed.map((id: string) => (
-                    <span key={id} className="text-[10px] font-bold px-2 py-1 bg-zinc-800 text-zinc-400 rounded-md border border-zinc-700">
-                      {match.getLabel(id)}
-                    </span>
-                  ))}
+                <div className="text-2xl font-black text-white">
+                  {match.iNeed.length}
                 </div>
+                <p className="text-[8px] text-zinc-500 font-bold uppercase mt-1">
+                  {t('market.sticker_count')}
+                </p>
               </div>
-              <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50">
-                <p className="text-[10px] font-black text-green-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50 flex flex-col items-center justify-center text-center">
+                <p className="text-[10px] font-black text-green-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                    <Repeat className="w-3 h-3" /> {t('market.they_need')}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {match.theyNeed.map((id: string) => (
-                    <span key={id} className="text-[10px] font-bold px-2 py-1 bg-zinc-800 text-zinc-400 rounded-md border border-zinc-700">
-                      {match.getLabel(id)}
-                    </span>
-                  ))}
+                <div className="text-2xl font-black text-white">
+                  {match.theyNeed.length}
                 </div>
+                <p className="text-[8px] text-zinc-500 font-bold uppercase mt-1">
+                  {t('market.sticker_count')}
+                </p>
               </div>
             </div>
             

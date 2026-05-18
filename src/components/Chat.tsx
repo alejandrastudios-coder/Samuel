@@ -9,6 +9,7 @@ import { cn } from '../lib/utils';
 import { format } from 'date-fns';
 import { TEAMS, normalizeStickerId, RARITIES, FWC_COUNT, COCA_COLA_COUNT, STICKERS_PER_TEAM } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
+import { TranslatedMessage } from './TranslatedMessage';
 
 export default function Chat({ userProfile }: { userProfile: UserProfile | null }) {
   const { t } = useLanguage();
@@ -506,7 +507,11 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                       ? "bg-green-600 text-white rounded-tr-none" 
                       : (msg.tradeData ? "bg-zinc-950 border-2 border-green-500/50 text-white rounded-tl-none ring-4 ring-green-500/5 shadow-2xl" : "bg-zinc-900 text-zinc-100 border border-zinc-800 rounded-tl-none")
                   )}>
-                    <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                    <TranslatedMessage 
+                      text={msg.text} 
+                      senderId={msg.senderId} 
+                      currentUserId={userProfile?.userId} 
+                    />
                     
                     {msg.tradeData && (
                       <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-3">
@@ -596,7 +601,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                    <div className="flex flex-col gap-2">
                       {tradeInfo.theyNeed.length > 0 ? tradeInfo.theyNeed.map(sticker => (
                         <TradeSlot 
                           key={sticker.id} 
@@ -606,7 +611,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                           type="give"
                         />
                       )) : (
-                        <div className="col-span-full py-12 text-center bg-zinc-900/30 rounded-3xl border border-dashed border-zinc-800">
+                        <div className="py-12 text-center bg-zinc-900/30 rounded-3xl border border-dashed border-zinc-800">
                           <p className="text-zinc-500 font-bold italic text-sm">{t('chat.no_repeats_peer')}</p>
                         </div>
                       )}
@@ -633,7 +638,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                    <div className="flex flex-col gap-2">
                       {tradeInfo.iNeed.length > 0 ? tradeInfo.iNeed.map(sticker => (
                         <TradeSlot 
                           key={sticker.id} 
@@ -644,7 +649,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                           impact={getStickerImpact(sticker.id)}
                         />
                       )) : (
-                        <div className="col-span-full py-12 text-center bg-zinc-900/30 rounded-3xl border border-dashed border-zinc-800">
+                        <div className="py-12 text-center bg-zinc-900/30 rounded-3xl border border-dashed border-zinc-800">
                           <p className="text-zinc-500 font-bold italic text-sm">{t('chat.no_missing_peer')}</p>
                         </div>
                       )}
@@ -667,7 +672,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                         initial={{ x: 20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         onClick={handleCompleteExchange}
-                        className="flex-1 py-5 bg-green-500 text-black rounded-2xl font-black uppercase tracking-widest hover:bg-green-400 transition-all shadow-2xl shadow-green-500/30 flex items-center justify-center gap-3 relative overflow-hidden group"
+                        className="flex-1 py-4 bg-green-500 text-black rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-green-400 transition-all shadow-2xl shadow-green-500/30 flex items-center justify-center gap-3 relative overflow-hidden group"
                       >
                          <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                          <ArrowRightLeft className="w-5 h-5" />
@@ -725,52 +730,53 @@ const MessageSquare = ({ className }: { className?: string }) => (
 const TradeSlot = ({ sticker, isSelected, onToggle, type, impact }: any) => {
   const { t } = useLanguage();
   
-  // Extract number and team code from label (e.g. "ARG 10")
-  const parts = sticker.label.split(' ');
-  const teamCode = parts[0];
-  const number = parts.slice(1).join(' ');
-
   return (
     <motion.button
-      whileHover={{ scale: 1.05, y: -2 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ x: 4 }}
+      whileTap={{ scale: 0.99 }}
       onClick={onToggle}
       className={cn(
-        "relative group p-4 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-1 overflow-hidden",
+        "w-full flex items-center justify-between p-2.5 rounded-xl border-2 transition-all duration-200 overflow-hidden",
         isSelected 
           ? (type === 'give' 
-              ? "bg-green-600 border-green-400 text-white shadow-[0_0_20px_rgba(34,197,94,0.4)]" 
-              : "bg-amber-500 border-amber-400 text-black shadow-[0_0_20px_rgba(245,158,11,0.4)]")
-          : "bg-zinc-900/80 border-zinc-700/50 text-zinc-100 hover:border-zinc-500"
+              ? "bg-green-600 border-green-400 text-white shadow-lg shadow-green-900/20" 
+              : "bg-amber-500 border-amber-400 text-black shadow-lg shadow-amber-900/20")
+          : "bg-zinc-900/40 border-zinc-800/80 text-zinc-100 hover:border-zinc-700 hover:bg-zinc-900"
       )}
     >
-      <div className={cn(
-        "text-[9px] font-black uppercase tracking-widest mb-1",
-        isSelected ? (type === 'give' ? "text-green-200" : "text-black/60") : "text-zinc-500"
-      )}>
-        {teamCode}
-      </div>
-      
-      <div className={cn(
-        "text-2xl font-black tracking-tighter leading-none",
-        isSelected ? "text-white" : "text-white"
-      )}>
-        {number}
+      <div className="flex items-center gap-4">
+        <div className={cn(
+          "w-9 h-9 flex items-center justify-center rounded-lg font-black text-xs border transition-colors",
+          isSelected 
+            ? "bg-white/10 border-white/20" 
+            : "bg-zinc-950 border-zinc-800"
+        )}>
+          {isSelected ? (
+            <Check className={cn("w-5 h-5", type === 'give' ? "text-white" : "text-black")} />
+          ) : (
+            type === 'give' ? <Zap className="w-4 h-4 text-green-500" /> : <Trophy className="w-4 h-4 text-amber-500" />
+          )}
+        </div>
+        
+        <div className="flex flex-col items-start px-1">
+          <div className="text-sm font-bold tracking-tight uppercase">
+            {sticker.label}
+          </div>
+          {impact && !isSelected && (
+            <div className="text-[7px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-1 mt-0.5">
+              <Sparkles className="w-2.5 h-2.5" />
+              {impact === 'new' ? t('chat.impact_new') : t('chat.impact_complete')}
+            </div>
+          )}
+        </div>
       </div>
 
       {isSelected && (
-        <motion.div 
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="absolute top-2 right-2 bg-white text-black p-0.5 rounded-full shadow-lg"
-        >
-          <Check className="w-3 h-3" />
-        </motion.div>
-      )}
-
-      {impact && !isSelected && (
-        <div className="text-[7px] font-black uppercase tracking-tight text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-md mt-1 border border-amber-500/20">
-          {impact === 'new' ? t('chat.impact_new') : t('chat.impact_complete')}
+        <div className={cn(
+          "px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border bg-white/20 border-white/10 shrink-0 ml-2",
+          type === 'give' ? "text-white" : "text-black/60"
+        )}>
+          {t('chat.selected')}
         </div>
       )}
     </motion.button>
