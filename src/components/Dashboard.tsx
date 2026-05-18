@@ -50,6 +50,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'groups'), (snap) => {
       setGroups(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserGroup)));
+    }, (error) => {
+      console.error("Error watching groups in Dashboard:", error);
     });
     return () => unsub();
   }, []);
@@ -71,6 +73,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         total += (counts[userProfile.userId] || 0);
       });
       setUnreadCount(total);
+    }, (error) => {
+      console.error("Error watching unread counts in Dashboard:", error);
     });
 
     return () => unsub();
@@ -106,6 +110,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
            setProgress(doc.data() as AlbumProgress);
            setLastUpdate(new Date());
          }
+      }, (error) => {
+        console.error("Error watching my progress in Dashboard:", error);
       });
     }
   }, [userProfile]);

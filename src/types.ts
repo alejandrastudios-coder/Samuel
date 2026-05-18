@@ -45,4 +45,9 @@ export interface Message {
   senderId: string;
   text: string;
   createdAt: any;
+  tradeData?: {
+    gave: string[]; // Stickers given by sender
+    received: string[]; // Stickers received by sender
+    appliedBy?: string[]; // List of userIds who already synced this specific trade
+  };
 }

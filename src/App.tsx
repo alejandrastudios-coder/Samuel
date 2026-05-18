@@ -295,6 +295,8 @@ export default function App() {
           }
         }
         lastUnreadCount = unreadTotal;
+      }, (error) => {
+        console.error("Error watching chats badge:", error);
       });
       
       return () => unsub();

@@ -49,14 +49,20 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
     const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
     const usersUnsub = onSnapshot(q, (snap) => {
       setUsers(snap.docs.map(d => ({ ...d.data() } as UserProfile)));
+    }, (error) => {
+      console.error("Error watching users in AdminPanel:", error);
     });
 
     const groupsUnsub = onSnapshot(query(collection(db, 'groups'), orderBy('createdAt', 'desc')), (snap) => {
       setGroups(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserGroup)));
+    }, (error) => {
+      console.error("Error watching groups in AdminPanel:", error);
     });
 
     const progressUnsub = onSnapshot(collection(db, 'album_progress'), (snap) => {
       setAllProgress(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => {
+      console.error("Error watching progress in AdminPanel:", error);
     });
 
     return () => {

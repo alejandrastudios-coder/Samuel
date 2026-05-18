@@ -20,6 +20,8 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'groups'), (snap) => {
       setGroups(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserGroup)));
+    }, (error) => {
+      console.error("Error watching groups in Marketplace:", error);
     });
     return () => unsub();
   }, []);
@@ -286,14 +288,11 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
                   <ArrowRightLeft className="w-3 h-3" /> {t('market.connected')}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {match.iNeed.slice(0, 5).map((id: string) => (
+                  {match.iNeed.map((id: string) => (
                     <span key={id} className="text-[10px] font-bold px-2 py-1 bg-zinc-800 text-zinc-400 rounded-md border border-zinc-700">
                       {match.getLabel(id)}
                     </span>
                   ))}
-                  {match.iNeed.length > 5 && (
-                    <span className="text-[10px] font-bold px-2 py-1 text-zinc-600">+{match.iNeed.length - 5}</span>
-                  )}
                 </div>
               </div>
               <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800/50">
@@ -301,14 +300,11 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
                    <Repeat className="w-3 h-3" /> {t('market.they_need')}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {match.theyNeed.slice(0, 5).map((id: string) => (
+                  {match.theyNeed.map((id: string) => (
                     <span key={id} className="text-[10px] font-bold px-2 py-1 bg-zinc-800 text-zinc-400 rounded-md border border-zinc-700">
                       {match.getLabel(id)}
                     </span>
                   ))}
-                   {match.theyNeed.length > 5 && (
-                    <span className="text-[10px] font-bold px-2 py-1 text-zinc-600">+{match.theyNeed.length - 5}</span>
-                  )}
                 </div>
               </div>
             </div>

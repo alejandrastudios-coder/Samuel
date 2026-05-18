@@ -4,10 +4,10 @@ import { collection, query, onSnapshot, doc, orderBy, addDoc, serverTimestamp, u
 import { db } from '../lib/firebase';
 import { UserProfile, Chat as ChatType, Message, AlbumProgress } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, User as UserIcon, ArrowLeft, MoreVertical, ShieldCheck, LogOut, ArrowRightLeft, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Send, User as UserIcon, ArrowLeft, MoreVertical, ShieldCheck, LogOut, ArrowRightLeft, ChevronDown, ChevronUp, Trash2, Check, X, Zap, Sparkles, Trophy } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
-import { TEAMS, normalizeStickerId, RARITIES } from '../constants';
+import { TEAMS, normalizeStickerId, RARITIES, FWC_COUNT, COCA_COLA_COUNT, STICKERS_PER_TEAM } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Chat({ userProfile }: { userProfile: UserProfile | null }) {
@@ -21,7 +21,9 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [myProgress, setMyProgress] = useState<AlbumProgress | null>(null);
   const [peerProgress, setPeerProgress] = useState<AlbumProgress | null>(null);
-  const [showTradeInfo, setShowTradeInfo] = useState(true);
+  const [isNegotiating, setIsNegotiating] = useState(false);
+  const [selectedToGive, setSelectedToGive] = useState<string[]>([]);
+  const [selectedToReceive, setSelectedToReceive] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,21 +60,25 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
           
           return sameCountry && sharedGroups.length > 0;
         }));
-      }, (error) => console.error("Error fetching chats:", error));
+      }, (error) => {
+        console.error("Error fetching chats in Chat component:", error);
+      });
 
-      // Fetch all users
       unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
         const usersMap: Record<string, UserProfile> = {};
         snap.docs.forEach(d => {
           usersMap[d.id] = d.data() as UserProfile;
         });
         setAllUsers(usersMap);
-      }, (error) => console.error("Error fetching users:", error));
+      }, (error) => {
+        console.error("Error fetching users in Chat component:", error);
+      });
 
-      // Fetch my progress
       unsubMyProgress = onSnapshot(doc(db, 'album_progress', userProfile.userId), (snap) => {
         if (snap.exists()) setMyProgress(snap.data() as AlbumProgress);
-      }, (error) => console.error("Error fetching my progress:", error));
+      }, (error) => {
+        console.error("Error fetching my progress in Chat component:", error);
+      });
     }
 
     return () => {
@@ -95,6 +101,8 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
       setTimeout(() => {
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
       }, 100);
+    }, (error) => {
+      console.error("Error watching messages in Chat component:", error);
     });
 
     return unsubMessages;
@@ -206,6 +214,8 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
       } else {
         setPeerProgress({ userId: peerId, stickers: {} } as AlbumProgress);
       }
+    }, (error) => {
+      console.error("Error watching peer progress in Chat component:", error);
     });
     return unsubPeerProgress;
   }, [peerId]);
@@ -249,6 +259,114 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
 
     return { iNeed, theyNeed };
   }, [myProgress, peerProgress]);
+
+  const getStickerImpact = (stickerId: string) => {
+    if (!myProgress) return null;
+    const normId = normalizeStickerId(stickerId);
+    if ((myProgress.stickers[normId] || 0) === 0) {
+      // Check if this sticker completes a team
+      const [teamName] = normId.split('-');
+      const teamStickers = Object.keys(myProgress.stickers).filter(id => id.startsWith(teamName));
+      const stickersPerTeam = teamName === 'FWC' ? FWC_COUNT : (teamName === 'CC' ? COCA_COLA_COUNT : STICKERS_PER_TEAM);
+      
+      if (teamStickers.length === stickersPerTeam - 1) {
+        return 'complete';
+      }
+      return 'new';
+    }
+    return null;
+  };
+
+  const handleToggleGive = (id: string) => {
+    setSelectedToGive(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleToggleReceive = (id: string) => {
+    setSelectedToReceive(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleCompleteExchange = async () => {
+    if (!userProfile || !chatId || !peerId || (selectedToGive.length === 0 && selectedToReceive.length === 0)) return;
+
+    try {
+      // 1. Send special message
+      const tradeMsg = {
+        senderId: userProfile.userId,
+        text: `${t('chat.trade_completed_msg')}\n\n📤 ${t('market.gave')}: ${selectedToGive.map(id => tradeInfo?.theyNeed.find(t => t.id === id)?.label || id).join(', ')}\n📥 ${t('market.received')}: ${selectedToReceive.map(id => tradeInfo?.iNeed.find(t => t.id === id)?.label || id).join(', ')}`,
+        createdAt: serverTimestamp(),
+        tradeData: {
+          gave: selectedToGive,
+          received: selectedToReceive,
+          appliedBy: [userProfile.userId]
+        }
+      };
+
+      await addDoc(collection(db, 'chats', chatId, 'messages'), tradeMsg);
+
+      // 2. Update my album progress
+      const currentStickers = { ...myProgress?.stickers };
+      
+      selectedToGive.forEach(id => {
+        currentStickers[id] = Math.max(0, (currentStickers[id] || 0) - 1);
+      });
+      
+      selectedToReceive.forEach(id => {
+        currentStickers[id] = (currentStickers[id] || 0) + 1;
+      });
+
+      await updateDoc(doc(db, 'album_progress', userProfile.userId), {
+        stickers: currentStickers,
+        updatedAt: serverTimestamp()
+      });
+
+      // 3. Update chat last message
+      await updateDoc(doc(db, 'chats', chatId), {
+        lastMessage: t('chat.trade_completed_summary'),
+        updatedAt: serverTimestamp()
+      });
+
+      // Clear selection and hide info
+      setSelectedToGive([]);
+      setSelectedToReceive([]);
+      setIsNegotiating(false);
+    } catch (err) {
+      console.error("Error completing exchange:", err);
+    }
+  };
+
+  const handleSyncMessageTrade = async (msg: Message) => {
+    if (!userProfile || !msg.tradeData || msg.tradeData.appliedBy?.includes(userProfile.userId)) return;
+
+    try {
+      const currentStickers = { ...myProgress?.stickers };
+      
+      // If I am NOT the sender, I should RECEIVE what they GAVE, and GIVE what they RECEIVED
+      const isSender = msg.senderId === userProfile.userId;
+      const toReceive = isSender ? msg.tradeData.received : msg.tradeData.gave;
+      const toGive = isSender ? msg.tradeData.gave : msg.tradeData.received;
+
+      toGive.forEach(id => {
+        currentStickers[id] = Math.max(0, (currentStickers[id] || 0) - 1);
+      });
+      
+      toReceive.forEach(id => {
+        currentStickers[id] = (currentStickers[id] || 0) + 1;
+      });
+
+      await updateDoc(doc(db, 'album_progress', userProfile.userId), {
+        stickers: currentStickers,
+        updatedAt: serverTimestamp()
+      });
+
+      // Mark message as applied by me
+      const applied = [...(msg.tradeData.appliedBy || []), userProfile.userId];
+      await updateDoc(doc(db, 'chats', chatId!, 'messages', msg.id), {
+        'tradeData.appliedBy': applied
+      });
+    } catch (err) {
+      console.error("Error syncing trade from message:", err);
+    }
+  };
 
   return (
     <div className="flex h-[calc(100vh-6rem)] md:h-[calc(100vh-4rem)] bg-zinc-950 rounded-3xl border border-zinc-800 overflow-hidden shadow-2xl">
@@ -358,15 +476,11 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
             </div>
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => setShowTradeInfo(!showTradeInfo)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
-                  showTradeInfo ? "bg-green-600 text-white border-green-500" : "bg-zinc-800 text-zinc-400 border-zinc-700"
-                )}
+                onClick={() => setIsNegotiating(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-white text-black hover:bg-green-400 transition-all shadow-xl shadow-white/5 active:scale-95"
               >
-                <ArrowRightLeft className="w-3 h-3" />
-                {t('chat.negotiation')}
-                {showTradeInfo ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3 transition-transform" />}
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+                {t('chat.negotiate_btn')}
               </button>
               <button className="text-zinc-500 hover:text-white p-2">
                 <MoreVertical className="w-5 h-5" />
@@ -374,86 +488,8 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
             </div>
           </div>
 
-          {/* Messages & Trade Info Container */}
+          {/* Messages Container */}
           <div className="flex-1 flex flex-col min-h-0 bg-dots">
-            <AnimatePresence>
-              {showTradeInfo && tradeInfo && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="bg-zinc-950 border-b border-zinc-800 shadow-inner max-h-[60%] flex flex-col shrink-0 z-10"
-                >
-                   <div className="p-4 md:p-6 flex flex-col gap-4 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 max-w-5xl mx-auto w-full">
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-                       <div className="space-y-3">
-                         <div className="sticky top-0 bg-zinc-950 pb-2 z-10 flex items-center gap-2 text-[10px] font-black text-green-500 uppercase tracking-widest">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                            {t('market.they_need')}:
-                         </div>
-                         <div className="flex flex-wrap gap-2">
-                           {tradeInfo.theyNeed.length > 0 ? tradeInfo.theyNeed.map(item => (
-                             <span key={item.id} className="px-3 py-1.5 bg-zinc-900 border border-zinc-700/50 rounded-xl text-[10px] font-bold text-zinc-200 hover:border-green-500/30 transition-colors">
-                               {item.label}
-                             </span>
-                           )) : <span className="text-[10px] text-zinc-600 italic px-2">{t('chat.no_repeats_peer')}</span>}
-                         </div>
-                       </div>
-                       <div className="space-y-3 md:border-l md:border-zinc-800 md:pl-8">
-                         <div className="sticky top-0 bg-zinc-950 pb-2 z-10 flex items-center gap-2 text-[10px] font-black text-amber-500 uppercase tracking-widest">
-                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                            {t('market.connected')}:
-                         </div>
-                         <div className="flex flex-wrap gap-2">
-                           {tradeInfo.iNeed.length > 0 ? tradeInfo.iNeed.map(item => (
-                             <span key={item.id} className="px-3 py-1.5 bg-zinc-900 border border-zinc-700/50 rounded-xl text-[10px] font-bold text-zinc-200 hover:border-amber-500/30 transition-colors">
-                               {item.label}
-                             </span>
-                           )) : <span className="text-[10px] text-zinc-600 italic px-2">{t('chat.no_missing_peer')}</span>}
-                         </div>
-                       </div>
-                     </div>
-
-                     {(tradeInfo.iNeed.length > 0 || tradeInfo.theyNeed.length > 0) && (
-                       <button 
-                          onClick={async () => {
-                            const userRarity = userProfile?.rarity || 'cualquier';
-                            const peerRarity = peerUser?.rarity || 'cualquier';
-
-                            let tMsg = `${t('chat.proposal_intro')}\n\n`;
-                            tMsg += `${t('chat.collecting_rarity')} ${t(`rarity.${userRarity}`).toUpperCase()}.\n`;
-                            tMsg += `${t('chat.you_collecting_rarity')} ${t(`rarity.${peerRarity}`).toUpperCase()}?\n\n`;
-
-                            if (tradeInfo.theyNeed.length > 0) {
-                              tMsg += `👉 ${t('chat.i_can_give')} ${tradeInfo.theyNeed.map(i => i.label).join(', ')}\n`;
-                            }
-                            if (tradeInfo.iNeed.length > 0) {
-                              tMsg += `👈 ${t('chat.i_am_interested')} ${tradeInfo.iNeed.map(i => i.label).join(', ')}\n`;
-                            }
-                            tMsg += `\n${t('chat.trade_interest')}`;
-                            
-                            await addDoc(collection(db, 'chats', chatId!, 'messages'), {
-                              senderId: userProfile?.userId,
-                              text: tMsg,
-                              createdAt: serverTimestamp()
-                            });
-                            
-                            await updateDoc(doc(db, 'chats', chatId!), {
-                              lastMessage: t('chat.proposal_sent'),
-                              updatedAt: serverTimestamp()
-                            });
-                            setShowTradeInfo(false);
-                          }}
-                          className="w-full py-4 mt-2 bg-green-500 text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-green-400 transition-all shadow-xl shadow-green-500/10 active:scale-[0.98]"
-                        >
-                          {t('chat.send_proposal')}
-                        </button>
-                     )}
-                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
- 
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.map((msg, idx) => {
               const isMine = msg.senderId === userProfile?.userId;
@@ -468,9 +504,33 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                     "max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm",
                     isMine 
                       ? "bg-green-600 text-white rounded-tr-none" 
-                      : "bg-zinc-900 text-zinc-100 border border-zinc-800 rounded-tl-none"
+                      : (msg.tradeData ? "bg-zinc-950 border-2 border-green-500/50 text-white rounded-tl-none ring-4 ring-green-500/5 shadow-2xl" : "bg-zinc-900 text-zinc-100 border border-zinc-800 rounded-tl-none")
                   )}>
                     <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                    
+                    {msg.tradeData && (
+                      <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-3">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-green-300">
+                          <Check className="w-3 h-3" />
+                          {t('chat.trade_verification')}
+                        </div>
+                        
+                        {msg.tradeData.appliedBy?.includes(userProfile?.userId || '') ? (
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-green-400 bg-green-500/10 px-3 py-2 rounded-xl border border-green-500/20">
+                            <Check className="w-3 h-3" />
+                            {t('chat.album_synced')}
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => handleSyncMessageTrade(msg)}
+                            className="w-full py-2.5 bg-white text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-400 transition-all active:scale-95 shadow-lg group-hover:scale-105"
+                          >
+                            {t('chat.sync_my_album')}
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     <div className={cn(
                       "text-[10px] mt-1 text-right",
                       isMine ? "text-green-100/70" : "text-zinc-500"
@@ -483,6 +543,145 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
             })}
             </div>
           </div>
+
+          <AnimatePresence>
+            {isNegotiating && tradeInfo && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 1.1, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                className="absolute inset-0 z-50 bg-zinc-950 flex flex-col"
+              >
+                {/* Trading Zone Header */}
+                <div className="flex items-center justify-between p-6 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-xl">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center shadow-lg shadow-green-500/20">
+                      <ArrowRightLeft className="text-black w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-white tracking-tight uppercase">{t('chat.trading_zone')}</h2>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em]">
+                        {t('chat.negotiating_with')} <span className="text-green-500">{peerUser?.displayName}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsNegotiating(false)}
+                    className="p-3 bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-2xl transition-all"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Main Interaction Area */}
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-10 pb-32">
+                  
+                  {/* YOU GIVE SECTION */}
+                  <section className="space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-green-500/10 rounded-xl">
+                          <Zap className="w-6 h-6 text-green-500" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black text-white uppercase tracking-tight">
+                            {t('chat.your_offering_to')} <span className="text-green-500">{peerUser?.displayName}</span>
+                          </h3>
+                          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">{t('chat.select_stickers_to_give')}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-full border border-zinc-800">
+                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{t('chat.selected')}:</span>
+                        <span className="text-sm font-black text-green-500">{selectedToGive.length}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                      {tradeInfo.theyNeed.length > 0 ? tradeInfo.theyNeed.map(sticker => (
+                        <TradeSlot 
+                          key={sticker.id} 
+                          sticker={sticker} 
+                          isSelected={selectedToGive.includes(sticker.id)}
+                          onToggle={() => handleToggleGive(sticker.id)}
+                          type="give"
+                        />
+                      )) : (
+                        <div className="col-span-full py-12 text-center bg-zinc-900/30 rounded-3xl border border-dashed border-zinc-800">
+                          <p className="text-zinc-500 font-bold italic text-sm">{t('chat.no_repeats_peer')}</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* YOU RECEIVE SECTION */}
+                  <section className="space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-amber-500/10 rounded-xl">
+                          <Trophy className="w-6 h-6 text-amber-500" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black text-white uppercase tracking-tight">
+                            {t('chat.receiving_from')} <span className="text-amber-500">{peerUser?.displayName}</span>
+                          </h3>
+                          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">{t('chat.select_stickers_to_receive')}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-full border border-zinc-800">
+                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{t('chat.selected')}:</span>
+                        <span className="text-sm font-black text-amber-500">{selectedToReceive.length}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                      {tradeInfo.iNeed.length > 0 ? tradeInfo.iNeed.map(sticker => (
+                        <TradeSlot 
+                          key={sticker.id} 
+                          sticker={sticker} 
+                          isSelected={selectedToReceive.includes(sticker.id)}
+                          onToggle={() => handleToggleReceive(sticker.id)}
+                          type="receive"
+                          impact={getStickerImpact(sticker.id)}
+                        />
+                      )) : (
+                        <div className="col-span-full py-12 text-center bg-zinc-900/30 rounded-3xl border border-dashed border-zinc-800">
+                          <p className="text-zinc-500 font-bold italic text-sm">{t('chat.no_missing_peer')}</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                </div>
+
+
+                {/* Final Confirmation Floating Bar */}
+                <div className="absolute bottom-0 left-0 right-0 p-8 pt-12 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pointer-events-none">
+                  <div className="max-w-4xl mx-auto flex items-center gap-4 pointer-events-auto">
+                    <button 
+                      onClick={() => setIsNegotiating(false)}
+                      className="px-8 py-4 bg-zinc-900 text-zinc-400 font-bold rounded-2xl border border-zinc-800 hover:text-white transition-all active:scale-95 text-xs uppercase"
+                    >
+                      {t('chat.cancel_negotiation')}
+                    </button>
+                    {(selectedToGive.length > 0 || selectedToReceive.length > 0) && (
+                      <motion.button 
+                        initial={{ x: 20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        onClick={handleCompleteExchange}
+                        className="flex-1 py-5 bg-green-500 text-black rounded-2xl font-black uppercase tracking-widest hover:bg-green-400 transition-all shadow-2xl shadow-green-500/30 flex items-center justify-center gap-3 relative overflow-hidden group"
+                      >
+                         <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                         <ArrowRightLeft className="w-5 h-5" />
+                         {t('chat.confirm_exchange')}
+                         <div className="px-3 py-1 bg-black/10 rounded-full text-[10px]">
+                           {selectedToGive.length + selectedToReceive.length}
+                         </div>
+                      </motion.button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Input */}
           <div className="p-4 bg-zinc-900/50 border-t border-zinc-800">
@@ -522,3 +721,58 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
 const MessageSquare = ({ className }: { className?: string }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 );
+
+const TradeSlot = ({ sticker, isSelected, onToggle, type, impact }: any) => {
+  const { t } = useLanguage();
+  
+  // Extract number and team code from label (e.g. "ARG 10")
+  const parts = sticker.label.split(' ');
+  const teamCode = parts[0];
+  const number = parts.slice(1).join(' ');
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.05, y: -2 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onToggle}
+      className={cn(
+        "relative group p-4 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-1 overflow-hidden",
+        isSelected 
+          ? (type === 'give' 
+              ? "bg-green-600 border-green-400 text-white shadow-[0_0_20px_rgba(34,197,94,0.4)]" 
+              : "bg-amber-500 border-amber-400 text-black shadow-[0_0_20px_rgba(245,158,11,0.4)]")
+          : "bg-zinc-900/80 border-zinc-700/50 text-zinc-100 hover:border-zinc-500"
+      )}
+    >
+      <div className={cn(
+        "text-[9px] font-black uppercase tracking-widest mb-1",
+        isSelected ? (type === 'give' ? "text-green-200" : "text-black/60") : "text-zinc-500"
+      )}>
+        {teamCode}
+      </div>
+      
+      <div className={cn(
+        "text-2xl font-black tracking-tighter leading-none",
+        isSelected ? "text-white" : "text-white"
+      )}>
+        {number}
+      </div>
+
+      {isSelected && (
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute top-2 right-2 bg-white text-black p-0.5 rounded-full shadow-lg"
+        >
+          <Check className="w-3 h-3" />
+        </motion.div>
+      )}
+
+      {impact && !isSelected && (
+        <div className="text-[7px] font-black uppercase tracking-tight text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-md mt-1 border border-amber-500/20">
+          {impact === 'new' ? t('chat.impact_new') : t('chat.impact_complete')}
+        </div>
+      )}
+    </motion.button>
+  );
+};

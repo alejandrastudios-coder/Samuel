@@ -27,6 +27,8 @@ export default function Login() {
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'groups'), (snap) => {
       setGroups(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserGroup)));
+    }, (error) => {
+      console.error("Error watching groups in Login:", error);
     });
     return () => unsub();
   }, []);

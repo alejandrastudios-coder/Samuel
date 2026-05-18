@@ -88,7 +88,7 @@ service cloud.firestore {
 
     // 5. Groups (Sectors)
     match /groups/{groupId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
