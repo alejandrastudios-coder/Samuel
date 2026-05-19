@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, getDocs, setDoc, where, getDoc, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { checkCompletionAndNotify } from '../lib/stats';
 import { UserProfile, AlbumProgress, StickerStatus } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, FLAGS, normalizeStickerId } from '../constants';
 import { motion, AnimatePresence } from 'motion/react';
@@ -179,6 +180,19 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
       }
 
       await updateDoc(doc(db, 'album_progress', userProfile.userId), updates);
+      
+      // Update local state copy to check completion without waiting for fetch if possible, 
+      // but wait, we have the progress object.
+      const newStickers = { ...progress.stickers };
+      if (decrement) {
+        if (existingKeys.length > 0) {
+          newStickers[existingKeys[0]] = Math.max(0, (newStickers[existingKeys[0]] || 0) - 1);
+        }
+      } else {
+        const keyToUpdate = existingKeys.length > 0 ? existingKeys[0] : stickerId;
+        newStickers[keyToUpdate] = (newStickers[keyToUpdate] || 0) + 1;
+      }
+      checkCompletionAndNotify(userProfile.userId, newStickers);
     } catch (error) {
       console.error("Error updating sticker:", error);
     }

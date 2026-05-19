@@ -73,6 +73,9 @@ export const translations: Translations = {
   'dash.competing_against': { es: 'Estás compitiendo contra {count} coleccionistas activos.', en: 'You are competing against {count} active collectors.', pt: 'Você está competindo contra {count} colecionadores ativos.' },
   'dash.search_exchanges': { es: 'Buscar Intercambios', en: 'Search Exchanges', pt: 'Buscar Trocas' },
   'dash.top_10': { es: 'Top 10 Global', en: 'Top 10 Global', pt: 'Top 10 Global' },
+  'dash.winners_list': { es: 'Salón de la Fama', en: 'Hall of Fame', pt: 'Hall da Fama' },
+  'dash.winners_desc': { es: 'Coleccionistas que han alcanzado la gloria eterna.', en: 'Collectors who have achieved eternal glory.', pt: 'Colecionadores que alcançaram a glória eterna.' },
+  'dash.completed_on': { es: 'Completado el', en: 'Completed on', pt: 'Concluído em' },
   'dash.history_stats': { es: 'Estás a {count} estampas de completar la historia. Cada intercambio te acerca más.', en: 'You are {count} stickers away from completing the history. Every exchange brings you closer.', pt: 'Você está a {count} figurinhas de completar a história. Cada troca te aproxima mais.' },
   'dash.next_objectives': { es: 'Siguientes Objetivos', en: 'Next Objectives', pt: 'Próximos Objetivos' },
   'dash.action_recommended': { es: 'Acción Recomendada', en: 'Recommended Action', pt: 'Ação Recomendada' },
@@ -305,4 +308,8 @@ export const translations: Translations = {
   'rarity.label_morado': { es: 'Épico', en: 'Epic', pt: 'Épico' },
   'rarity.label_verde': { es: 'Leyenda', en: 'Legend', pt: 'Lenda' },
   'rarity.label_negro': { es: 'Uno en el mundo', en: 'One of a kind', pt: 'Único no mundo' },
+  'online.live_connection': { es: 'Conexión en Vivo', en: 'Live Connection', pt: 'Conexão ao Vivo' },
+  'online.entered_app': { es: '¡Ha entrado a la aplicación!', en: 'Has entered the application!', pt: 'Entrou no aplicativo!' },
+  'online.status': { es: 'En línea', en: 'Online', pt: 'Online' },
+  'online.offline_status': { es: 'Desconectado', en: 'Offline', pt: 'Desconectado' },
 };

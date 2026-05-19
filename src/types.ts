@@ -21,6 +21,8 @@ export interface UserProfile {
   status: UserStatus;
   role: UserRole;
   createdAt: any;
+  completedAt?: any; // New field for Hall of Fame
+  online?: boolean; // Live presence state
 }
 
 export type StickerStatus = number; // 0: missing, 1: owned, 2+: count of stickers

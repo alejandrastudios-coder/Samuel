@@ -4,7 +4,7 @@ import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, s
 import { doc, getDoc, setDoc, serverTimestamp, query, collection, where, getDocs, updateDoc, onSnapshot } from 'firebase/firestore';
 import { motion } from 'motion/react';
 import { Trophy, Lock, User as UserIcon, UserPlus, LogIn, MapPin } from 'lucide-react';
-import { UserProfile, UserGroup } from '../types';
+import { UserProfile } from '../types';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RARITIES, ALL_COUNTRIES } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -17,21 +17,11 @@ export default function Login() {
   const [displayName, setDisplayName] = useState('');
   const [residingCountry, setResidingCountry] = useState('');
   const [selectedRarity, setSelectedRarity] = useState('cualquier');
-  const [groups, setGroups] = useState<UserGroup[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const getInternalEmail = (u: string) => `${u.toLowerCase().trim()}@album2026.com`;
-
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'groups'), (snap) => {
-      setGroups(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserGroup)));
-    }, (error) => {
-      console.error("Error watching groups in Login:", error);
-    });
-    return () => unsub();
-  }, []);
 
   useEffect(() => {
     // Check if we just registered and are now logged in but pending

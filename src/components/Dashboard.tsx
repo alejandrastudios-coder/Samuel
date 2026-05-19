@@ -5,7 +5,8 @@ import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress, UserGroup } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, RARITIES, ALL_COUNTRIES, FLAGS } from '../constants';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus, X, Settings2, MapPin, Tag } from 'lucide-react';
+import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus, X, Settings2, MapPin, Tag, Crown, Sparkles } from 'lucide-react';
+import { format } from 'date-fns';
 import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RepeatedList } from './RepeatedList';
@@ -139,7 +140,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     return count;
   }, [normalizedMyStickers]);
 
-  const leaderboard = useMemo(() => {
+  const { winners, elite } = useMemo(() => {
     // Combine all available users with their corresponding progress
     const allStats = Object.keys(allUsers).map(uId => {
       const user = allUsers[uId];
@@ -182,15 +183,28 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         owned,
         fwcOwned: uniqueFWC.size,
         ccOwned: uniqueCC.size,
+        completedAt: item.user.completedAt?.toDate?.() || null,
         updatedAt: item.progress?.updatedAt?.toDate?.() || new Date(0)
       };
     });
 
-    // Sort by rate (desc) then by updatedAt (asc) - tie breaker: who reached it first
-    return calculated.sort((a, b) => {
-      if (b.rate !== a.rate) return b.rate - a.rate;
-      return a.updatedAt.getTime() - b.updatedAt.getTime();
-    }).slice(0, 10);
+    const winners = calculated
+      .filter(u => u.rate === 100)
+      .sort((a, b) => {
+        const timeA = a.completedAt?.getTime() || a.updatedAt.getTime();
+        const timeB = b.completedAt?.getTime() || b.updatedAt.getTime();
+        return timeA - timeB;
+      });
+
+    const elite = calculated
+      .filter(u => u.rate < 100)
+      .sort((a, b) => {
+        if (b.rate !== a.rate) return b.rate - a.rate;
+        return a.updatedAt.getTime() - b.updatedAt.getTime();
+      })
+      .slice(0, 10);
+
+    return { winners, elite };
   }, [allProgress, allUsers, userProfile, progress, totalPossible]);
 
   const missingCount = totalPossible - ownedCount;
@@ -638,8 +652,119 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         })}
       </div>
 
-      {leaderboard.length > 0 && (
-        <section className="bg-zinc-900 border border-zinc-800 p-6 sm:p-10 rounded-[3rem] relative overflow-hidden shadow-2xl">
+      {/* WINNERS SECTION - HALL OF FAME */}
+      {winners.length > 0 && (
+        <section className="bg-zinc-950 border border-amber-500/30 p-6 sm:p-10 rounded-[3rem] relative overflow-hidden shadow-[0_0_50px_rgba(251,191,36,0.1)] mb-8">
+           {/* Fun background effects */}
+           <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+             {[...Array(6)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  animate={{ 
+                    y: [0, -200], 
+                    opacity: [0, 1, 0],
+                    scale: [0.5, 1, 0.5]
+                  }}
+                  transition={{ 
+                    duration: 3 + i, 
+                    repeat: Infinity,
+                    delay: i * 0.7
+                  }}
+                  className="absolute text-amber-500/20"
+                  style={{ 
+                    left: `${Math.random() * 100}%`,
+                    top: '100%'
+                  }}
+                >
+                  <Sparkles className="w-8 h-8" />
+                </motion.div>
+             ))}
+           </div>
+
+           <div className="relative z-10">
+             <div className="flex items-center justify-between mb-8">
+               <div className="flex items-center gap-4">
+                 <div className="p-3 bg-amber-500/20 rounded-2xl border border-amber-500/40 shadow-inner">
+                   <Trophy className="w-8 h-8 text-amber-500" />
+                 </div>
+                 <div>
+                   <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none flex items-center gap-2">
+                     {t('dash.winners_list')}
+                     <Crown className="w-6 h-6 text-amber-500 animate-bounce" />
+                   </h3>
+                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em] mt-1">{t('dash.winners_desc')}</p>
+                 </div>
+               </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               {winners.map((item, idx) => (
+                 <motion.div 
+                   key={item.userId}
+                   initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                   animate={{ opacity: 1, scale: 1, y: 0 }}
+                   transition={{ delay: idx * 0.1 }}
+                   className="bg-zinc-900/50 backdrop-blur-sm p-6 rounded-[2rem] border border-amber-500/30 flex items-center justify-between group hover:border-amber-400 hover:bg-zinc-900 transition-all shadow-xl"
+                 >
+                   <div className="flex items-center gap-5">
+                     <div className="relative">
+                       <div className="w-16 h-16 bg-gradient-to-tr from-amber-400 to-amber-600 rounded-[1.25rem] flex items-center justify-center font-black italic text-black text-2xl shadow-lg border-2 border-white/20 relative z-10">
+                         {idx + 1}
+                       </div>
+                       <motion.div 
+                         animate={{ rotate: 360 }}
+                         transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                         className="absolute -inset-2 border border-dotted border-amber-500/50 rounded-full"
+                       />
+                     </div>
+                     <div>
+                       <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <h4 className="text-xl font-black text-white uppercase tracking-tight leading-none">{item.user?.displayName}</h4>
+                          {item.user?.online && (
+                            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/30">
+                              <span className="relative flex h-1.5 w-1.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
+                              </span>
+                              <span className="text-[7.5px] font-black uppercase text-green-500 tracking-wider">ONLINE</span>
+                            </span>
+                          )}
+                        </div>
+                       <div className="flex flex-col gap-1.5">
+                         <p className="text-[9px] text-amber-500 font-black uppercase tracking-widest flex items-center gap-1.5">
+                           <Clock className="w-3 h-3" />
+                           {t('dash.completed_on')} {item.completedAt ? format(item.completedAt, 'dd/MM/yyyy HH:mm') : '-'}
+                         </p>
+                         <div className="flex items-center gap-2">
+                           {item.user?.residingCountry && (
+                             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/40 border border-amber-500/20">
+                               {FLAGS[item.user.residingCountry as keyof typeof FLAGS] ? (
+                                 <img src={FLAGS[item.user.residingCountry as keyof typeof FLAGS]} className="w-3 h-2 object-cover rounded-[1px]" alt="" referrerPolicy="no-referrer" />
+                               ) : (
+                                 <MapPin className="w-2 h-2 text-amber-500" />
+                               )}
+                               <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-tighter">{item.user.residingCountry}</span>
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                   <div className="flex flex-col items-end gap-2">
+                     <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center text-black shadow-[0_0_20px_rgba(245,158,11,0.4)] border-2 border-amber-300">
+                       <CheckCircle2 className="w-6 h-6" />
+                     </div>
+                     <span className="text-[10px] text-amber-500 font-black italic tracking-tighter">TOTAL GLORY</span>
+                   </div>
+                 </motion.div>
+               ))}
+             </div>
+           </div>
+        </section>
+      )}
+
+      {elite.length > 0 && (
+        <section className="bg-zinc-900 border border-zinc-800 p-6 sm:p-10 rounded-[3rem] relative overflow-hidden shadow-2xl mb-8">
           <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 blur-[120px] -mr-48 -mt-48 rounded-full" />
           
           <div className="relative z-10">
@@ -659,7 +784,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
             </div>
 
             <div className="space-y-3">
-              {leaderboard.map((item, idx) => (
+              {elite.map((item, idx) => (
                 <motion.div 
                   key={item.userId}
                   initial={{ opacity: 0, x: -20 }}
@@ -709,6 +834,15 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                             {item.user?.displayName || t('admin.no_user_found')}
                           </p>
                           <div className="flex items-center gap-1.5">
+                            {item.user?.online && (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-green-500/10 border border-green-500/30 text-[8px] text-green-500 font-black uppercase tracking-wider">
+                                <span className="relative flex h-1 w-1 mr-1">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-1 w-1 bg-green-500"></span>
+                                </span>
+                                ONLINE
+                              </span>
+                            )}
                             {idx === 0 && (
                               <div className="flex items-center gap-1 bg-amber-500 text-black px-2 py-0.5 rounded-md shadow-lg border border-amber-400">
                                 <Star className="w-2.5 h-2.5 fill-current" />

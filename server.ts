@@ -2,22 +2,8 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GoogleGenAI } from "@google/genai";
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || '',
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
-  }
-});
 
 async function startServer() {
   const app = express();
@@ -26,24 +12,8 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
-  app.post('/api/translate', async (req, res) => {
-    try {
-      const { text, targetLanguage } = req.body;
-      
-      if (!text || !targetLanguage) {
-        return res.status(400).json({ error: 'Text and targetLanguage are required' });
-      }
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Translate the following text to ${targetLanguage}. Return ONLY the translated text without any explanations or extra characters: "${text}"`,
-      });
-
-      res.json({ translatedText: response.text });
-    } catch (error: any) {
-      console.error('Translation error:', error);
-      res.status(500).json({ error: 'Failed to translate' });
-    }
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok' });
   });
 
   // Serve static files from the dist directory in production

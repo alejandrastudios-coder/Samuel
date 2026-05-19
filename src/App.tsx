@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from './lib/firebase';
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, 
@@ -219,6 +219,107 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const { t } = useLanguage();
+  const [onlineNotifications, setOnlineNotifications] = useState<{ id: string; displayName: string; photoURL?: string }[]>([]);
+
+  // --- ONLINE PRESENCE & NOTIFICATIONS ENGINE ---
+  const onlineStateRef = useRef<Record<string, boolean>>({});
+  const isPresenceInitialLoad = useRef(true);
+
+  // Set current user as online and offline on active session / visibility / tab close
+  useEffect(() => {
+    if (!user) return;
+    
+    const userRef = doc(db, 'users', user.uid);
+    
+    // Set to online initially
+    updateDoc(userRef, { online: true }).catch(err => console.error("Error writing online status:", err));
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        updateDoc(userRef, { online: true }).catch(err => console.error("Error setting online:", err));
+      }
+    };
+
+    const handleUnload = () => {
+      // Best-effort offline setter when tab matches window unload
+      updateDoc(userRef, { online: false }).catch(() => {});
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      updateDoc(userRef, { online: false }).catch(() => {});
+    };
+  }, [user]);
+
+  // Listen for other users turning online and show nice sliding notifications
+  useEffect(() => {
+    if (!user) {
+      isPresenceInitialLoad.current = true;
+      onlineStateRef.current = {};
+      return;
+    }
+
+    const q = query(
+      collection(db, 'users'),
+      where('status', '==', 'approved')
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const nextOnline: Record<string, boolean> = {};
+      const newlyOnline: { id: string; displayName: string; photoURL?: string }[] = [];
+
+      snapshot.docs.forEach(docSnap => {
+        const uId = docSnap.id;
+        if (uId === user.uid) return; // skip ourselves
+
+        const data = docSnap.data();
+        const isOnline = !!data.online;
+        nextOnline[uId] = isOnline;
+
+        // Skip the very first query snapshot load so we don't spam notifications for already-online users.
+        if (!isPresenceInitialLoad.current) {
+          const previouslyOnline = !!onlineStateRef.current[uId];
+          if (isOnline && !previouslyOnline) {
+            newlyOnline.push({
+              id: uId,
+              displayName: data.displayName || 'Coleccionista',
+              photoURL: data.photoURL
+            });
+          }
+        }
+      });
+
+      // Update ref
+      onlineStateRef.current = nextOnline;
+      isPresenceInitialLoad.current = false;
+
+      // Log/Trigger notifications
+      if (newlyOnline.length > 0) {
+        newlyOnline.forEach((notifUser) => {
+          // Play bubble notification alert sound locally
+          try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
+            audio.volume = 0.25;
+            audio.play().catch(() => {});
+          } catch (e) {}
+
+          const toastId = Math.random().toString(36).substring(2, 9);
+          setOnlineNotifications(prev => [...prev, { id: toastId, displayName: notifUser.displayName, photoURL: notifUser.photoURL }]);
+
+          // Auto remove after 4.5 seconds
+          setTimeout(() => {
+            setOnlineNotifications(prev => prev.filter(n => n.id !== toastId));
+          }, 4500);
+        });
+      }
+    });
+
+    return () => unsub();
+  }, [user]);
 
   useEffect(() => {
     if (user && 'Notification' in window) {
@@ -324,13 +425,70 @@ export default function App() {
     }
   }, [user]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (user) {
+      try {
+        await updateDoc(doc(db, 'users', user.uid), { online: false });
+      } catch (err) {
+        console.error("Error setting offline status on logout:", err);
+      }
+    }
     signOut(auth);
   };
 
   return (
     <BrowserRouter>
       <div className="min-h-[100dvh] bg-zinc-950 text-white font-sans selection:bg-green-500/30 selection:text-green-500 flex flex-col">
+        {/* Real-time Online Presence Notifications */}
+        <AnimatePresence>
+          {onlineNotifications.length > 0 && (
+            <div className="fixed top-24 right-4 sm:right-8 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+              {onlineNotifications.map((notif) => (
+                <motion.div
+                  key={notif.id}
+                  id={`online-toast-${notif.id}`}
+                  initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                  className="pointer-events-auto bg-zinc-950/95 border border-green-500/30 p-4 rounded-2xl flex items-center gap-3.5 shadow-[0_10px_30px_rgba(34,197,94,0.12)] ring-1 ring-green-500/10 backdrop-blur-md"
+                >
+                  <div className="relative flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-900 overflow-hidden flex items-center justify-center border border-zinc-850">
+                      {notif.photoURL ? (
+                        <img src={notif.photoURL} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <UserIcon className="w-5 h-5 text-zinc-650" />
+                      )}
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-zinc-950 flex items-center justify-center">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-[9px] font-black text-green-500 uppercase tracking-widest leading-none mb-1 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                      {t('online.live_connection')}
+                    </h4>
+                    <p className="text-xs font-black text-white truncate my-0.5">
+                      {notif.displayName}
+                    </p>
+                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider leading-none mt-1">
+                      {t('online.entered_app')}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setOnlineNotifications(prev => prev.filter(n => n.id !== notif.id))}
+                    className="p-1 text-zinc-500 hover:text-white rounded-lg hover:bg-zinc-800/50 transition-all self-start ml-2"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </AnimatePresence>
+
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/*" element={

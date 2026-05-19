@@ -241,11 +241,18 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden border border-zinc-700">
-                  {match.user.photoURL ? (
-                    <img src={match.user.photoURL} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <UserIcon className="text-zinc-500 w-8 h-8" />
+                <div className="relative">
+                  <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden border border-zinc-700">
+                    {match.user.photoURL ? (
+                      <img src={match.user.photoURL} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon className="text-zinc-500 w-8 h-8" />
+                    )}
+                  </div>
+                  {match.user.online && (
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-zinc-950 flex items-center justify-center">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+                    </div>
                   )}
                 </div>
                 <div>

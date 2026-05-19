@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { collection, query, onSnapshot, doc, orderBy, addDoc, serverTimestamp, updateDoc, where, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { checkCompletionAndNotify } from '../lib/stats';
 import { UserProfile, Chat as ChatType, Message, AlbumProgress } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, User as UserIcon, ArrowLeft, MoreVertical, ShieldCheck, LogOut, ArrowRightLeft, ChevronDown, ChevronUp, Trash2, Check, X, Zap, Sparkles, Trophy } from 'lucide-react';
@@ -9,7 +10,6 @@ import { cn } from '../lib/utils';
 import { format } from 'date-fns';
 import { TEAMS, normalizeStickerId, RARITIES, FWC_COUNT, COCA_COLA_COUNT, STICKERS_PER_TEAM } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
-import { TranslatedMessage } from './TranslatedMessage';
 
 export default function Chat({ userProfile }: { userProfile: UserProfile | null }) {
   const { t } = useLanguage();
@@ -320,6 +320,8 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
         updatedAt: serverTimestamp()
       });
 
+      checkCompletionAndNotify(userProfile.userId, currentStickers);
+
       // 3. Update chat last message
       await updateDoc(doc(db, 'chats', chatId), {
         lastMessage: t('chat.trade_completed_summary'),
@@ -358,6 +360,8 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
         stickers: currentStickers,
         updatedAt: serverTimestamp()
       });
+
+      checkCompletionAndNotify(userProfile.userId, currentStickers);
 
       // Mark message as applied by me
       const applied = [...(msg.tradeData.appliedBy || []), userProfile.userId];
@@ -401,8 +405,15 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                   isActive && "bg-green-600/10 border-r-2 border-green-500"
                 )}
               >
-                <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex-shrink-0 flex items-center justify-center overflow-hidden border border-zinc-700">
-                   {user?.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : <UserIcon className="text-zinc-500" />}
+                <div className="relative flex-shrink-0">
+                  <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden border border-zinc-700">
+                     {user?.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : <UserIcon className="text-zinc-500" />}
+                  </div>
+                  {user?.online && (
+                    <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-zinc-950 flex items-center justify-center">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1">
@@ -472,7 +483,17 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                   {peerUser?.displayName}
                   {peerUser?.role === 'admin' && <ShieldCheck className="w-3 h-3 text-green-500" />}
                 </h3>
-                <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">{t('chat.online')}</p>
+                {peerUser?.online ? (
+                  <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse animate-duration-1000" />
+                    {t('online.status')}
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5">
+                    <span className="w-1.5 h-1.5 bg-zinc-500 rounded-full" />
+                    {t('online.offline_status')}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -507,11 +528,7 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                       ? "bg-green-600 text-white rounded-tr-none" 
                       : (msg.tradeData ? "bg-zinc-950 border-2 border-green-500/50 text-white rounded-tl-none ring-4 ring-green-500/5 shadow-2xl" : "bg-zinc-900 text-zinc-100 border border-zinc-800 rounded-tl-none")
                   )}>
-                    <TranslatedMessage 
-                      text={msg.text} 
-                      senderId={msg.senderId} 
-                      currentUserId={userProfile?.userId} 
-                    />
+                    <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                     
                     {msg.tradeData && (
                       <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-3">
