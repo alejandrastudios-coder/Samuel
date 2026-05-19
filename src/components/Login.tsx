@@ -8,6 +8,7 @@ import { UserProfile } from '../types';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RARITIES, ALL_COUNTRIES } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
+import { LanguageSelector } from './LanguageSelector';
 
 export default function Login() {
   const { t } = useLanguage();
@@ -141,6 +142,11 @@ export default function Login() {
 
   return (
     <div className="min-h-[100dvh] w-full flex items-center justify-center bg-zinc-950 overflow-hidden relative p-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] font-sans bg-fluid-waves">
+      {/* Top absolute area for language selection */}
+      <div className="absolute top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
+
       <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none overflow-hidden">
          <div className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-worldcup-red/20 rounded-full blur-[140px] animate-pulse" />
          <div className="absolute -bottom-[10%] -right-[10%] w-[50vw] h-[50vw] bg-worldcup-green/20 rounded-full blur-[120px] animate-pulse transition-all duration-[5000ms]" />

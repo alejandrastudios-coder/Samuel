@@ -40,6 +40,7 @@ export interface Chat {
   updatedAt: any;
   hiddenBy?: string[];
   unreadCounts?: Record<string, number>;
+  typing?: Record<string, boolean>;
 }
 
 export interface Message {

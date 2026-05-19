@@ -249,15 +249,35 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
                       <UserIcon className="text-zinc-500 w-8 h-8" />
                     )}
                   </div>
-                  {match.user.online && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-zinc-950 flex items-center justify-center">
-                      <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
-                    </div>
-                  )}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-zinc-950 flex items-center justify-center bg-zinc-950">
+                    {match.user.online ? (
+                      <div className="w-full h-full rounded-full bg-green-500 relative flex items-center justify-center">
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+                      </div>
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-zinc-600 flex items-center justify-center" style={{ backgroundColor: '#52525b' }} />
+                    )}
+                  </div>
                 </div>
                 <div>
                   <h4 className="text-white font-bold text-lg">{match.user.displayName}</h4>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
+                    {/* Online/Offline Badge */}
+                    {match.user.online ? (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/10 border border-green-500/30 text-[8px] text-green-500 font-black tracking-wider uppercase">
+                        <span className="relative flex h-1 w-1 mr-1">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-1 w-1 bg-green-500"></span>
+                        </span>
+                        {t('online.status')}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-800/50 border border-zinc-800 text-[8px] text-zinc-500 font-black tracking-wider uppercase">
+                        <span className="h-1 w-1 rounded-full bg-zinc-600 mr-1"></span>
+                        {t('online.offline_status')}
+                      </span>
+                    )}
+
                     {match.user.residingCountry && (
                       <div className="flex items-center gap-1 text-zinc-500 text-[10px] uppercase font-black tracking-tight" title={t('market.same_country')}>
                         <MapPin className="w-3 h-3 text-worldcup-red" />

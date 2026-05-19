@@ -20,12 +20,81 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
   const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
   const [text, setText] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isCurrentlyTypingRef = useRef<boolean>(false);
   const [myProgress, setMyProgress] = useState<AlbumProgress | null>(null);
   const [peerProgress, setPeerProgress] = useState<AlbumProgress | null>(null);
   const [isNegotiating, setIsNegotiating] = useState(false);
   const [selectedToGive, setSelectedToGive] = useState<string[]>([]);
   const [selectedToReceive, setSelectedToReceive] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const activeChat = chats.find(c => c.id === chatId);
+  
+  const peerId = useMemo(() => {
+    if (activeChat) return activeChat.participants.find(p => p !== userProfile?.userId);
+    if (chatId && userProfile) {
+      const parts = chatId.split('_');
+      return parts.find(p => p !== userProfile.userId);
+    }
+    return null;
+  }, [activeChat, chatId, userProfile]);
+
+  const peerUser = peerId ? allUsers[peerId] : null;
+
+  // --- REAL-TIME TYPING INDICATOR ENGINE ---
+  useEffect(() => {
+    if (!chatId || !userProfile) return;
+
+    const chatRef = doc(db, 'chats', chatId);
+
+    if (text.trim().length > 0) {
+      if (!isCurrentlyTypingRef.current) {
+        isCurrentlyTypingRef.current = true;
+        updateDoc(chatRef, {
+          [`typing.${userProfile.userId}`]: true
+        }).catch(err => console.error("Error setting typing status:", err));
+      }
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        isCurrentlyTypingRef.current = false;
+        updateDoc(chatRef, {
+          [`typing.${userProfile.userId}`]: false
+        }).catch(err => console.error("Error clearing typing status:", err));
+      }, 2500);
+    } else {
+      if (isCurrentlyTypingRef.current) {
+        isCurrentlyTypingRef.current = false;
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        updateDoc(chatRef, {
+          [`typing.${userProfile.userId}`]: false
+        }).catch(err => console.error("Error clearing typing status:", err));
+      }
+    }
+  }, [text, chatId, userProfile]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (chatId && userProfile && isCurrentlyTypingRef.current) {
+        isCurrentlyTypingRef.current = false;
+        const chatRef = doc(db, 'chats', chatId);
+        updateDoc(chatRef, {
+          [`typing.${userProfile.userId}`]: false
+        }).catch(() => {});
+      }
+    };
+  }, [chatId, userProfile]);
+
+  // Smooth scroll when peer typing changes
+  useEffect(() => {
+    if (peerId && activeChat?.typing?.[peerId]) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+      }, 100);
+    }
+  }, [peerId, activeChat?.typing]);
 
   useEffect(() => {
     if (!userProfile) return;
@@ -133,25 +202,13 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
         updatedAt: serverTimestamp(),
         [`unreadCounts.${peerId}`]: (unreadCounts[peerId] || 0) + 1,
         // Reset my count just in case called while sending
-        [`unreadCounts.${userProfile.userId}`]: 0
+        [`unreadCounts.${userProfile.userId}`]: 0,
+        [`typing.${userProfile.userId}`]: false
       });
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
-
-  const activeChat = chats.find(c => c.id === chatId);
-  
-  const peerId = useMemo(() => {
-    if (activeChat) return activeChat.participants.find(p => p !== userProfile?.userId);
-    if (chatId && userProfile) {
-      const parts = chatId.split('_');
-      return parts.find(p => p !== userProfile.userId);
-    }
-    return null;
-  }, [activeChat, chatId, userProfile]);
-
-  const peerUser = peerId ? allUsers[peerId] : null;
 
   // Reset unread count when chat is opened
   useEffect(() => {
@@ -409,11 +466,15 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                   <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden border border-zinc-700">
                      {user?.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : <UserIcon className="text-zinc-500" />}
                   </div>
-                  {user?.online && (
-                    <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-zinc-950 flex items-center justify-center">
-                      <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
-                    </div>
-                  )}
+                  <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-zinc-950 flex items-center justify-center">
+                    {user?.online ? (
+                      <div className="w-full h-full rounded-full bg-green-500 relative flex items-center justify-center">
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+                      </div>
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-zinc-650 flex items-center justify-center" style={{ backgroundColor: '#52525b' }} />
+                    )}
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1">
@@ -430,7 +491,18 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                     </div>
                   </div>
                   <div className="flex justify-between items-center gap-2">
-                    <p className="text-xs text-zinc-500 truncate flex-1">{chat.lastMessage}</p>
+                    {pId && (chat as any).typing?.[pId] ? (
+                      <p className="text-xs text-green-500 font-extrabold italic animate-pulse flex items-center gap-1 flex-1">
+                        <span className="flex gap-0.5 items-center">
+                          <span className="w-1 h-1 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1 h-1 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1 h-1 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </span>
+                        {t('chat.typing_indicator')}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-zinc-500 truncate flex-1">{chat.lastMessage}</p>
+                    )}
                     <button 
                       onClick={(e) => deleteChat(e, chat.id)}
                       className={cn(
@@ -475,15 +547,35 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div className="w-10 h-10 bg-zinc-800 rounded-xl overflow-hidden border border-zinc-800 shadow-sm">
-                 {peerUser?.photoURL ? <img src={peerUser.photoURL} alt="" className="w-full h-full object-cover" /> : <UserIcon className="text-zinc-500 p-2" />}
+              <div className="relative">
+                <div className="w-10 h-10 bg-zinc-800 rounded-xl overflow-hidden border border-zinc-800 shadow-sm">
+                   {peerUser?.photoURL ? <img src={peerUser.photoURL} alt="" className="w-full h-full object-cover" /> : <UserIcon className="text-zinc-500 p-2" />}
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-zinc-950 flex items-center justify-center bg-zinc-950">
+                  {peerUser?.online ? (
+                    <div className="w-2 h-2 rounded-full bg-green-500 relative flex items-center justify-center">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping" />
+                    </div>
+                  ) : (
+                    <div className="w-2 h-2 rounded-full bg-zinc-600 flex items-center justify-center" style={{ backgroundColor: '#52525b' }} />
+                  )}
+                </div>
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-1">
                   {peerUser?.displayName}
                   {peerUser?.role === 'admin' && <ShieldCheck className="w-3 h-3 text-green-500" />}
                 </h3>
-                {peerUser?.online ? (
+                {activeChat?.typing?.[peerId || ''] ? (
+                  <p className="text-[10px] text-green-500 font-extrabold uppercase tracking-widest flex items-center gap-1 mt-0.5 animate-pulse">
+                    <span className="flex gap-0.5 items-center">
+                      <span className="w-1 h-1 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1 h-1 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1 h-1 rounded-full bg-green-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </span>
+                    {t('chat.typing_indicator')}
+                  </p>
+                ) : peerUser?.online ? (
                   <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5">
                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse animate-duration-1000" />
                     {t('online.status')}
@@ -563,6 +655,25 @@ export default function Chat({ userProfile }: { userProfile: UserProfile | null 
                 </motion.div>
               );
             })}
+            
+            {peerId && activeChat?.typing?.[peerId] && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 10 }}
+                className="flex justify-start"
+              >
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl rounded-tl-none px-4 py-3 text-sm text-zinc-400 flex items-center gap-2 shadow-sm">
+                  <span className="font-bold text-white text-xs">{peerUser?.displayName || t('admin.no_user_found')}</span>
+                  <span className="text-zinc-500 text-xs">{t('chat.typing_indicator')}</span>
+                  <span className="flex gap-1 items-center ml-1">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                </div>
+              </motion.div>
+            )}
             </div>
           </div>
 

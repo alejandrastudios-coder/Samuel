@@ -720,13 +720,18 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                      <div>
                        <div className="flex items-center gap-2 flex-wrap mb-1">
                           <h4 className="text-xl font-black text-white uppercase tracking-tight leading-none">{item.user?.displayName}</h4>
-                          {item.user?.online && (
+                          {item.user?.online ? (
                             <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/30">
                               <span className="relative flex h-1.5 w-1.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
                               </span>
-                              <span className="text-[7.5px] font-black uppercase text-green-500 tracking-wider">ONLINE</span>
+                              <span className="text-[7.5px] font-black uppercase text-green-500 tracking-wider">{t('online.status')}</span>
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800/60 border border-zinc-800 text-zinc-500">
+                              <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" style={{ backgroundColor: '#52525b' }}></span>
+                              <span className="text-[7.5px] font-black uppercase text-zinc-500 tracking-wider">{t('online.offline_status')}</span>
                             </span>
                           )}
                         </div>
@@ -834,13 +839,18 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                             {item.user?.displayName || t('admin.no_user_found')}
                           </p>
                           <div className="flex items-center gap-1.5">
-                            {item.user?.online && (
+                            {item.user?.online ? (
                               <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-green-500/10 border border-green-500/30 text-[8px] text-green-500 font-black uppercase tracking-wider">
                                 <span className="relative flex h-1 w-1 mr-1">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                                   <span className="relative inline-flex rounded-full h-1 w-1 bg-green-500"></span>
                                 </span>
-                                ONLINE
+                                {t('online.status')}
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-zinc-800/40 border border-zinc-800 text-[8px] text-zinc-500 font-black uppercase tracking-wider">
+                                <span className="h-1 w-1 rounded-full bg-zinc-650 mr-1" style={{ backgroundColor: '#52525b' }}></span>
+                                {t('online.offline_status')}
                               </span>
                             )}
                             {idx === 0 && (

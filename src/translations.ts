@@ -312,4 +312,5 @@ export const translations: Translations = {
   'online.entered_app': { es: '¡Ha entrado a la aplicación!', en: 'Has entered the application!', pt: 'Entrou no aplicativo!' },
   'online.status': { es: 'En línea', en: 'Online', pt: 'Online' },
   'online.offline_status': { es: 'Desconectado', en: 'Offline', pt: 'Desconectado' },
+  'chat.typing_indicator': { es: 'está escribiendo...', en: 'is typing...', pt: 'está digitando...' },
 };
