@@ -4,7 +4,7 @@ import { doc, onSnapshot, updateDoc, serverTimestamp, collection, query, getDocs
 import { db } from '../lib/firebase';
 import { checkCompletionAndNotify } from '../lib/stats';
 import { UserProfile, AlbumProgress, StickerStatus } from '../types';
-import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, FLAGS, normalizeStickerId } from '../constants';
+import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, FLAGS, normalizeStickerId, getStickerNumbers } from '../constants';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Trophy, Star, Repeat, ChevronRight, Check, ArrowLeft, LogOut, User as UserIcon, X, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -26,7 +26,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
     return params.get('search') || '';
   });
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [selectedSticker, setSelectedSticker] = useState<{ id: string; num: number; group: StickerGroup } | null>(null);
+  const [selectedSticker, setSelectedSticker] = useState<{ id: string; num: string | number; group: StickerGroup } | null>(null);
   const [matchingUsers, setMatchingUsers] = useState<{ user: UserProfile, stickerId: string }[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
@@ -352,15 +352,15 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                   >
                     <div className="p-4 grid grid-cols-5 gap-2 border-t border-zinc-800/30">
-                      {Array.from({ length: group.count }).map((_, i) => {
-                        const id = `${group.id}-${i + 1}`;
+                      {getStickerNumbers(group.id).map((numVal) => {
+                        const id = `${group.id}-${numVal}`;
                         const normId = normalizeStickerId(id);
                         const count = normalizedMyStickers[normId] || 0;
                         
                         return (
                           <div key={id} className="relative group/sticker">
                             <button
-                              onClick={() => setSelectedSticker({ id, num: i + 1, group })}
+                              onClick={() => setSelectedSticker({ id, num: numVal, group })}
                               onContextMenu={(e) => {
                                 e.preventDefault();
                                 if (count > 0) toggleSticker(id, true);
@@ -372,7 +372,7 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
                                 count >= 2 && "bg-amber-500 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.3)]"
                               )}
                             >
-                              {i + 1}
+                              {numVal}
                               {count >= 2 && (
                                 <div className="absolute -top-2 -right-2 bg-amber-500 text-black rounded-full px-1.5 py-0.5 border-2 border-zinc-900 font-black flex items-center justify-center min-w-[20px] shadow-xl animate-in zoom-in-50">
                                    <span className="text-[10px]">+{count - 1}</span>

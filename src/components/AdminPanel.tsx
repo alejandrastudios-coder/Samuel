@@ -337,6 +337,174 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
     }
   };
 
+  const importSamuelRepeated = async () => {
+    if (!userProfile) return;
+    if (!confirm('¿Deseas importar tus repetidas exactas especificadas en tu lista para el perfil de Administrador?')) return;
+    
+    setIsImporting(true);
+    try {
+      const repeatedToImport: Record<string, number> = {
+        "MEX México-4": 2,
+        "MEX México-6": 2,
+        "MEX México-10": 3,
+        "RSA South Africa-8": 3,
+        "RSA South Africa-4": 2,
+        "RSA South Africa-10": 2,
+        "RSA South Africa-15": 2,
+        "KOR Korea Republic-1": 3,
+        "KOR Korea Republic-15": 2,
+        "KOR Korea Republic-7": 2,
+        "CZE Czechia-16": 2,
+        "CZE Czechia-12": 2,
+        "CZE Czechia-8": 3,
+        "CZE Czechia-6": 2,
+        "CAN Canada-3": 2,
+        "CAN Canada-9": 4,
+        "CAN Canada-14": 2,
+        "CAN Canada-7": 2,
+        "BIH Bosnia-Herzegovina-3": 4,
+        "BIH Bosnia-Herzegovina-1": 2,
+        "QAT Qatar-8": 4,
+        "QAT Qatar-1": 3,
+        "SUI Switzerland-14": 2,
+        "BRA Brazil-15": 3,
+        "BRA Brazil-14": 2,
+        "BRA Brazil-2": 2,
+        "MAR Morocco-14": 2,
+        "MAR Morocco-16": 2,
+        "MAR Morocco-17": 3,
+        "MAR Morocco-13": 2,
+        "HAI Haiti-17": 2,
+        "HAI Haiti-11": 2,
+        "HAI Haiti-15": 2,
+        "SCO Scotland-19": 3,
+        "SCO Scotland-1": 2,
+        "USA USA-8": 2,
+        "USA USA-12": 2,
+        "USA USA-19": 2,
+        "PAR Paraguay-16": 3,
+        "PAR Paraguay-4": 2,
+        "AUS Australia-5": 3,
+        "AUS Australia-8": 2,
+        "AUS Australia-15": 3,
+        "AUS Australia-19": 2,
+        "AUS Australia-6": 2,
+        "AUS Australia-13": 2,
+        "TUR Türkiye-12": 3,
+        "TUR Türkiye-7": 3,
+        "GER Germany-13": 3,
+        "GER Germany-14": 2,
+        "GER Germany-18": 2,
+        "GER Germany-6": 2,
+        "GER Germany-16": 2,
+        "CUW Curaçao-10": 2,
+        "CIV Côte d’Ivoire-6": 3,
+        "CIV Côte d’Ivoire-18": 2,
+        "CIV Côte d’Ivoire-15": 2,
+        "CIV Côte d’Ivoire-10": 2,
+        "ECU Ecuador-12": 2,
+        "ECU Ecuador-14": 3,
+        "ECU Ecuador-11": 2,
+        "ECU Ecuador-2": 3,
+        "NED Netherlands-16": 3,
+        "NED Netherlands-12": 2,
+        "NED Netherlands-6": 2,
+        "JPN Japan-3": 4,
+        "JPN Japan-11": 2,
+        "JPN Japan-7": 2,
+        "JPN Japan-19": 2,
+        "JPN Japan-1": 2,
+        "SWE Sweden-6": 2,
+        "TUN Tunisia-9": 2,
+        "TUN Tunisia-5": 3,
+        "BEL Belgium-4": 2,
+        "BEL Belgium-16": 2,
+        "BEL Belgium-17": 3,
+        "BEL Belgium-14": 2,
+        "EGY Egypt-3": 2,
+        "EGY Egypt-13": 2,
+        "IRN IR Iran-20": 2,
+        "IRN IR Iran-10": 2,
+        "IRN IR Iran-9": 2,
+        "IRN IR Iran-19": 2,
+        "NZL New Zealand-11": 2,
+        "NZL New Zealand-14": 2,
+        "NZL New Zealand-5": 3,
+        "NZL New Zealand-18": 2,
+        "ESP Spain-14": 2,
+        "ESP Spain-12": 2,
+        "ESP Spain-2": 3,
+        "CPV Cabo Verde-5": 4,
+        "CPV Cabo Verde-11": 3,
+        "CPV Cabo Verde-16": 3,
+        "CPV Cabo Verde-15": 2,
+        "KSA Saudi Arabia-5": 3,
+        "KSA Saudi Arabia-15": 2,
+        "KSA Saudi Arabia-11": 2,
+        "URU Uruguay-3": 2,
+        "URU Uruguay-2": 2,
+        "URU Uruguay-14": 2,
+        "URU Uruguay-5": 2,
+        "FRA France-9": 3,
+        "SEN Senegal-17": 2,
+        "SEN Senegal-8": 2,
+        "SEN Senegal-2": 2,
+        "SEN Senegal-16": 2,
+        "IRQ Iraq-20": 2,
+        "IRQ Iraq-9": 2,
+        "IRQ Iraq-11": 2,
+        "NOR Norway-11": 2,
+        "ARG Argentina-6": 2,
+        "ALG Algeria-12": 3,
+        "ALG Algeria-15": 2,
+        "AUT Austria-16": 5,
+        "AUT Austria-2": 3,
+        "AUT Austria-11": 3,
+        "AUT Austria-7": 2,
+        "JOR Jordan-18": 3,
+        "JOR Jordan-3": 2,
+        "JOR Jordan-14": 2,
+        "COD Congo DR-16": 4,
+        "COD Congo DR-3": 2,
+        "COD Congo DR-12": 2,
+        "UZB Uzbekistan-15": 2,
+        "UZB Uzbekistan-8": 2,
+        "COL Colombia-20": 2,
+        "COL Colombia-3": 2,
+        "COL Colombia-1": 2,
+        "CRO Croatia-17": 2,
+        "GHA Ghana-2": 3,
+        "PAN Panama-2": 2,
+        "PAN Panama-10": 2,
+        "FWC-19": 2,
+        "FWC-11": 2,
+        "FWC-00": 2
+      };
+
+      const progressRef = doc(db, 'album_progress', userProfile.userId);
+      const progressDoc = await getDoc(progressRef);
+      
+      let currentStickers = {};
+      if (progressDoc.exists()) {
+        currentStickers = progressDoc.data().stickers || {};
+      }
+      
+      const updatedStickers = { ...currentStickers, ...repeatedToImport };
+      
+      await updateDoc(progressRef, {
+        stickers: updatedStickers,
+        updatedAt: serverTimestamp()
+      });
+      
+      alert("¡Importación de de tus repetidas especificada completada con éxito!");
+    } catch (error) {
+      console.error('Error importing repeated stickers:', error);
+      alert('Error: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const resetAdminRepeatedStickers = async () => {
     if (!userProfile) return;
     if (!confirm(t('admin.reset_repeated_confirm'))) return;
@@ -426,10 +594,18 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
               <button 
                 onClick={importSamuelStickers}
                 disabled={isImporting}
-                className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700"
+                className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 font-mono text-[9px]"
               >
                 <Database className="w-4 h-4 text-blue-500" />
                 <span>{isImporting ? t('admin.importing') : t('admin.import_request')}</span>
+              </button>
+              <button 
+                onClick={importSamuelRepeated}
+                disabled={isImporting}
+                className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 text-amber-500"
+              >
+                <Layers className="w-4 h-4 text-amber-500" />
+                <span>REPETIDAS SAMUEL</span>
               </button>
               <button 
                 onClick={resetAdminRepeatedStickers}

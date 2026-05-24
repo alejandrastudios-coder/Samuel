@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Clock, Search } from 'lucide-react';
-import { TEAMS, FLAGS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId } from '../constants';
+import { TEAMS, FLAGS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, getStickerNumbers } from '../constants';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -16,7 +16,7 @@ export function MissingList({ isOpen, onClose, stickers, onFindWhoHasIt }: Missi
   const { t } = useLanguage();
 
   const missingByTeam = useMemo(() => {
-    const result: { team: string; stickers: { id: string; num: number }[] }[] = [];
+    const result: { team: string; stickers: { id: string; num: string }[] }[] = [];
 
     // Aggregate counts of owned stickers
     const counts: Record<string, number> = {};
@@ -27,19 +27,20 @@ export function MissingList({ isOpen, onClose, stickers, onFindWhoHasIt }: Missi
 
     // Group by standard teams
     TEAMS.forEach((teamName) => {
-      const teamMissing: { id: string; num: number }[] = [];
+      const teamMissing: { id: string; num: string }[] = [];
+      const nums = getStickerNumbers(teamName);
       
-      for (let i = 1; i <= STICKERS_PER_TEAM; i++) {
-        const id = `${teamName}-${i}`;
+      nums.forEach((numStr) => {
+        const id = `${teamName}-${numStr}`;
         const norm = normalizeStickerId(id);
         const count = counts[norm] || 0;
         if (count === 0) {
           teamMissing.push({ 
             id, 
-            num: i
+            num: numStr
           });
         }
-      }
+      });
 
       if (teamMissing.length > 0) {
         result.push({ team: teamName, stickers: teamMissing });
@@ -47,27 +48,29 @@ export function MissingList({ isOpen, onClose, stickers, onFindWhoHasIt }: Missi
     });
 
     // Special: FWC
-    const fwc: { id: string; num: number }[] = [];
-    for (let i = 1; i <= FWC_COUNT; i++) {
-      const id = `FWC-${i}`;
+    const fwc: { id: string; num: string }[] = [];
+    const fwcNums = getStickerNumbers('FWC');
+    fwcNums.forEach((numStr) => {
+      const id = `FWC-${numStr}`;
       const norm = normalizeStickerId(id);
       const count = counts[norm] || 0;
       if (count === 0) {
-        fwc.push({ id, num: i });
+        fwc.push({ id, num: numStr });
       }
-    }
+    });
     if (fwc.length > 0) result.push({ team: 'FWC', stickers: fwc });
 
     // Special: Coca-Cola
-    const cocacola: { id: string; num: number }[] = [];
-    for (let i = 1; i <= COCA_COLA_COUNT; i++) {
-      const id = `CC-${i}`;
+    const cocacola: { id: string; num: string }[] = [];
+    const ccNums = getStickerNumbers('CC');
+    ccNums.forEach((numStr) => {
+      const id = `CC-${numStr}`;
       const norm = normalizeStickerId(id);
       const count = counts[norm] || 0;
       if (count === 0) {
-        cocacola.push({ id, num: i });
+        cocacola.push({ id, num: numStr });
       }
-    }
+    });
     const ccLabel = t('album.coca_cola') || 'Coca-Cola';
     if (cocacola.length > 0) result.push({ team: ccLabel, stickers: cocacola });
 

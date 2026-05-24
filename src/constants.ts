@@ -7,9 +7,20 @@ export const TEAMS = [
   "POR Portugal", "COD Congo DR", "UZB Uzbekistan", "COL Colombia", "ENG England", "CRO Croatia", "GHA Ghana", "PAN Panama"
 ];
 
-export const FWC_COUNT = 19;
+export const FWC_COUNT = 20;
 export const COCA_COLA_COUNT = 12;
 export const STICKERS_PER_TEAM = 20;
+
+export const getStickerNumbers = (team: string): string[] => {
+  const cleanTeam = team.toLowerCase().trim();
+  if (cleanTeam === 'fwc' || cleanTeam === 'ufw') {
+    return ['00', ...Array.from({ length: 19 }, (_, i) => (i + 1).toString())];
+  }
+  if (cleanTeam === 'cc' || cleanTeam === 'coca-cola' || cleanTeam === 'extra') {
+    return Array.from({ length: 12 }, (_, i) => (i + 1).toString());
+  }
+  return Array.from({ length: 20 }, (_, i) => (i + 1).toString());
+};
 
 export const RARITIES = [
   { id: 'cualquier', name: 'Cualquier color', label: 'Predeterminado', color: 'bg-gradient-to-tr from-zinc-500 via-zinc-200 to-zinc-500', text: 'text-zinc-900', border: 'border-zinc-400' },
