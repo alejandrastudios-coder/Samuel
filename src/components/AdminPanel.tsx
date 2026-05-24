@@ -559,12 +559,12 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
             <p className="text-zinc-500 font-medium tracking-tight">{t('admin.description')}</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex bg-zinc-900/50 p-1 border border-zinc-800 rounded-2xl mr-2">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4 w-full lg:w-auto">
+          <div className="flex bg-zinc-900/50 p-1 border border-zinc-800 rounded-2xl w-full lg:w-auto">
             <button 
               onClick={() => setActiveTab('users')}
               className={cn(
-                "px-4 py-2 rounded-xl text-[10px] font-black transition-all",
+                "flex-1 lg:flex-initial px-4 py-2 rounded-xl text-[10px] font-black transition-all text-center",
                 activeTab === 'users' ? "bg-green-600 text-white shadow-lg" : "text-zinc-500 hover:text-zinc-300"
               )}
             >
@@ -573,7 +573,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
             <button 
               onClick={() => setActiveTab('groups')}
               className={cn(
-                "px-4 py-2 rounded-xl text-[10px] font-black transition-all",
+                "flex-1 lg:flex-initial px-4 py-2 rounded-xl text-[10px] font-black transition-all text-center",
                 activeTab === 'groups' ? "bg-green-600 text-white shadow-lg" : "text-zinc-500 hover:text-zinc-300"
               )}
             >
@@ -584,53 +584,53 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
           {activeTab === 'groups' ? (
             <button 
               onClick={() => { resetGroupForm(); setIsGroupModalOpen(true); }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 w-full lg:w-auto"
             >
               <Plus className="w-4 h-4" />
               <span>{t('admin.new_group')}</span>
             </button>
           ) : (
-            <>
+            <div className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2 w-full lg:w-auto">
               <button 
                 onClick={importSamuelStickers}
                 disabled={isImporting}
-                className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 font-mono text-[9px]"
+                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[9px] font-mono font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 w-full md:w-auto"
               >
-                <Database className="w-4 h-4 text-blue-500" />
+                <Database className="w-3.5 h-3.5 text-blue-500" />
                 <span>{isImporting ? t('admin.importing') : t('admin.import_request')}</span>
               </button>
               <button 
                 onClick={importSamuelRepeated}
                 disabled={isImporting}
-                className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 text-amber-500"
+                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[9px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 text-amber-500 w-full md:w-auto"
               >
-                <Layers className="w-4 h-4 text-amber-500" />
+                <Layers className="w-3.5 h-3.5 text-amber-500" />
                 <span>REPETIDAS SAMUEL</span>
               </button>
               <button 
                 onClick={resetAdminRepeatedStickers}
                 disabled={isResetting}
-                className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 font-black italic tracking-tight"
+                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[9px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 font-black italic tracking-tight w-full md:w-auto"
               >
-                <RotateCcw className="w-4 h-4 text-worldcup-red" />
+                <RotateCcw className="w-3.5 h-3.5 text-worldcup-red" />
                 <span>{isResetting ? t('admin.resetting_repeated') : t('admin.reset_repeated')}</span>
               </button>
               <button 
                 onClick={cleanupOrphans}
                 disabled={isCleaning}
-                className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700"
+                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[9px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 w-full md:w-auto"
               >
-                <Shield className="w-4 h-4 text-purple-500" />
+                <Shield className="w-3.5 h-3.5 text-purple-500" />
                 <span>{isCleaning ? t('admin.cleaning') : t('admin.clean_orphans')}</span>
               </button>
               <button 
                 onClick={() => { resetForm(); setIsModalOpen(true); }}
-                className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95"
+                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-[9px] font-black transition-all shadow-lg active:scale-95 col-span-2 md:col-span-1 w-full md:w-auto"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
                 <span>{editingUser ? t('admin.save') : t('admin.new_user')}</span>
               </button>
-            </>
+            </div>
           )}
         </div>
       </header>
