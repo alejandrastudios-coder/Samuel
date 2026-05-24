@@ -21,7 +21,10 @@ interface StickerGroup {
 export default function Album({ userProfile }: { userProfile: UserProfile | null }) {
   const { t } = useLanguage();
   const [progress, setProgress] = useState<AlbumProgress | null>(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('search') || '';
+  });
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedSticker, setSelectedSticker] = useState<{ id: string; num: number; group: StickerGroup } | null>(null);
   const [matchingUsers, setMatchingUsers] = useState<{ user: UserProfile, stickerId: string }[]>([]);

@@ -14,7 +14,10 @@ export default function Marketplace({ userProfile }: { userProfile: UserProfile 
   const [allProgress, setAllProgress] = useState<AlbumProgress[]>([]);
   const [allUsers, setAllUsers] = useState<Record<string, UserProfile>>({});
   const [groups, setGroups] = useState<UserGroup[]>([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('search') || '';
+  });
   const navigate = useNavigate();
 
   useEffect(() => {

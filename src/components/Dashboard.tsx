@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RepeatedList } from './RepeatedList';
+import { MissingList } from './MissingList';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Dashboard({ userProfile }: { userProfile: UserProfile | null }) {
@@ -20,6 +21,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const [showiOSInstall, setShowiOSInstall] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isRepeatedListOpen, setIsRepeatedListOpen] = useState(false);
+  const [isMissingListOpen, setIsMissingListOpen] = useState(false);
   const [isIOSModalOpen, setIsIOSModalOpen] = useState(false);
   const [isRarityModalOpen, setIsRarityModalOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
@@ -319,7 +321,15 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       color: 'text-amber-500', 
       bg: 'bg-amber-500/10' 
     },
-    { name: t('dash.missing'), value: missingCount, subValue: `${missingRate}%`, icon: Clock, color: 'text-worldcup-red', bg: 'bg-worldcup-red/10' },
+    { 
+      name: t('dash.missing'), 
+      value: missingCount, 
+      subValue: `${missingRate}%`, 
+      icon: Clock, 
+      color: 'text-worldcup-red', 
+      bg: 'bg-worldcup-red/10',
+      action: () => setIsMissingListOpen(true) 
+    },
     { name: t('dash.repeated'), value: repeatedCount, icon: Repeat, color: 'text-amber-500', bg: 'bg-amber-500/10', action: () => setIsRepeatedListOpen(true) },
     { name: t('dash.exchanges'), value: matchesCount, icon: ArrowRightLeft, color: 'text-purple-500', bg: 'bg-purple-500/10', action: () => navigate('/market') },
     { 
@@ -1043,6 +1053,13 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         isOpen={isRepeatedListOpen} 
         onClose={() => setIsRepeatedListOpen(false)} 
         stickers={normalizedMyStickers} 
+      />
+
+      <MissingList 
+        isOpen={isMissingListOpen} 
+        onClose={() => setIsMissingListOpen(false)} 
+        stickers={normalizedMyStickers}
+        onFindWhoHasIt={(stickerId) => navigate('/market?search=' + encodeURIComponent(stickerId))}
       />
 
       <AnimatePresence>

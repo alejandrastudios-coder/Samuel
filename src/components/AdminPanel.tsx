@@ -4,7 +4,7 @@ import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, setD
 import { db } from '../lib/firebase';
 import { UserProfile, UserGroup } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, CheckCircle, XCircle, Trash2, Shield, User, Search, Filter, ArrowLeft, LogOut, Plus, Edit2, X, AlertTriangle, Save, Database, LayoutGrid, MapPin, Tag, Layers, Palette } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Trash2, Shield, User, Search, Filter, ArrowLeft, LogOut, Plus, Edit2, X, AlertTriangle, Save, Database, LayoutGrid, MapPin, Tag, Layers, Palette, RotateCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { normalizeStickerId, ALL_COUNTRIES, FLAGS } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -233,6 +233,7 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
 
   const [isCleaning, setIsCleaning] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const importSamuelStickers = async () => {
     if (!userProfile) return;
@@ -336,6 +337,45 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
     }
   };
 
+  const resetAdminRepeatedStickers = async () => {
+    if (!userProfile) return;
+    if (!confirm(t('admin.reset_repeated_confirm'))) return;
+    
+    setIsResetting(true);
+    try {
+      const progressRef = doc(db, 'album_progress', userProfile.userId);
+      const progressDoc = await getDoc(progressRef);
+      
+      if (!progressDoc.exists()) {
+        alert(t('admin.no_progress_found'));
+        return;
+      }
+      
+      const currentStickers = progressDoc.data().stickers || {};
+      const updatedStickers = { ...currentStickers };
+      let resetCount = 0;
+      
+      Object.entries(currentStickers).forEach(([stickerId, count]) => {
+        if (typeof count === 'number' && count > 1) {
+          updatedStickers[stickerId] = 1;
+          resetCount += (count - 1);
+        }
+      });
+      
+      await updateDoc(progressRef, {
+        stickers: updatedStickers,
+        updatedAt: serverTimestamp()
+      });
+      
+      alert(t('admin.reset_repeated_complete').replace('{count}', resetCount.toString()));
+    } catch (error) {
+      console.error('Error resetting repeated stickers:', error);
+      alert('Error: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2">
@@ -390,6 +430,14 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
               >
                 <Database className="w-4 h-4 text-blue-500" />
                 <span>{isImporting ? t('admin.importing') : t('admin.import_request')}</span>
+              </button>
+              <button 
+                onClick={resetAdminRepeatedStickers}
+                disabled={isResetting}
+                className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 font-black italic tracking-tight"
+              >
+                <RotateCcw className="w-4 h-4 text-worldcup-red" />
+                <span>{isResetting ? t('admin.resetting_repeated') : t('admin.reset_repeated')}</span>
               </button>
               <button 
                 onClick={cleanupOrphans}
