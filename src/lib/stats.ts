@@ -1,7 +1,7 @@
 
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
-import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId } from '../constants';
+import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, getValidStickerIds } from '../constants';
 import { UserProfile, AlbumProgress } from '../types';
 
 export const TOTAL_POSSIBLE_STICKERS = (TEAMS.length * STICKERS_PER_TEAM) + FWC_COUNT + COCA_COLA_COUNT;
@@ -13,7 +13,9 @@ export const calculateOwnedCount = (stickers: Record<string, number>) => {
     const norm = normalizeStickerId(id);
     normalized[norm] = (normalized[norm] || 0) + s;
   });
-  return Object.keys(normalized).length;
+  
+  const validIds = getValidStickerIds();
+  return validIds.filter(id => (normalized[id] || 0) >= 1).length;
 };
 
 export const checkCompletionAndNotify = async (userId: string, stickers: Record<string, number>) => {

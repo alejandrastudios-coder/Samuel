@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, collection, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress, UserGroup } from '../types';
-import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, RARITIES, ALL_COUNTRIES, FLAGS } from '../constants';
+import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, RARITIES, ALL_COUNTRIES, FLAGS, getValidStickerIds, getStickerNumbers } from '../constants';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Users, Star, BarChart3, TrendingUp, Clock, Repeat, CheckCircle2, MessageCircle, LogOut, ShieldCheck, ArrowRightLeft, Download, ChevronRight, RefreshCcw, Smartphone, Share as ShareIcon, Plus, X, Settings2, MapPin, Tag, Crown, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
@@ -119,7 +119,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     }
   }, [userProfile]);
 
-  const totalPossible = (TEAMS.length * STICKERS_PER_TEAM) + FWC_COUNT + COCA_COLA_COUNT;
+  const validStickerIds = React.useMemo(() => getValidStickerIds(), []);
+  const totalPossible = validStickerIds.length;
   const stickers = progress?.stickers || {};
   
   // Aggregate stats using normalization
@@ -132,15 +133,18 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     return counts;
   }, [stickers]);
 
-  const ownedCount = Object.values(normalizedMyStickers).filter(s => s >= 1).length;
+  const ownedCount = useMemo(() => {
+    return validStickerIds.filter(id => (normalizedMyStickers[id] || 0) >= 1).length;
+  }, [normalizedMyStickers, validStickerIds]);
   
   const repeatedCount = useMemo(() => {
     let count = 0;
-    Object.values(normalizedMyStickers).forEach(s => {
+    validStickerIds.forEach(id => {
+      const s = normalizedMyStickers[id] || 0;
       if (s > 1) count += (s - 1);
     });
     return count;
-  }, [normalizedMyStickers]);
+  }, [normalizedMyStickers, validStickerIds]);
 
   const { winners, elite } = useMemo(() => {
     // Combine all available users with their corresponding progress
@@ -158,24 +162,28 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
 
     const calculated = allStats.map(item => {
       const s = item.progress?.stickers || {};
-      const uniqueFWC = new Set<string>();
-      const uniqueCC = new Set<string>();
-      const uniqueStandard = new Set<string>();
-
+      const normalizedUserStickers: Record<string, number> = {};
       Object.entries(s).forEach(([id, qty]) => {
         if (qty <= 0) return;
         const norm = normalizeStickerId(id);
-        
-        if (norm.startsWith('UFW') || norm.startsWith('FWC')) {
-          uniqueFWC.add(norm);
-        } else if (norm.startsWith('COCA-COLA') || norm.startsWith('CC')) {
-          uniqueCC.add(norm);
-        } else {
-          uniqueStandard.add(norm);
+        normalizedUserStickers[norm] = (normalizedUserStickers[norm] || 0) + qty;
+      });
+
+      let owned = 0;
+      let fwcOwned = 0;
+      let ccOwned = 0;
+
+      validStickerIds.forEach(id => {
+        if ((normalizedUserStickers[id] || 0) >= 1) {
+          owned++;
+          if (id.startsWith('FWC')) {
+            fwcOwned++;
+          } else if (id.startsWith('CC')) {
+            ccOwned++;
+          }
         }
       });
 
-      const owned = uniqueFWC.size + uniqueCC.size + uniqueStandard.size;
       const rate = Math.round((owned / totalPossible) * 100);
       
       return {
@@ -183,8 +191,8 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         user: item.user,
         rate,
         owned,
-        fwcOwned: uniqueFWC.size,
-        ccOwned: uniqueCC.size,
+        fwcOwned,
+        ccOwned,
         completedAt: item.user.completedAt?.toDate?.() || null,
         updatedAt: item.progress?.updatedAt?.toDate?.() || new Date(0)
       };
@@ -207,7 +215,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       .slice(0, 10);
 
     return { winners, elite };
-  }, [allProgress, allUsers, userProfile, progress, totalPossible]);
+  }, [allProgress, allUsers, userProfile, progress, totalPossible, validStickerIds]);
 
   const missingCount = totalPossible - ownedCount;
   const missingRate = Math.round((missingCount / totalPossible) * 100);
@@ -220,16 +228,20 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
     
     TEAMS.forEach((team) => {
       let teamOwned = 0;
-      for (let i = 1; i <= STICKERS_PER_TEAM; i++) {
-        const id = `${team}-${i}`;
-        if ((normalizedMyStickers[id] || 0) >= 1) {
+      const nums = getStickerNumbers(team);
+      const totalInTeam = nums.length;
+      
+      nums.forEach((num) => {
+        const id = `${team}-${num}`;
+        const normId = normalizeStickerId(id);
+        if ((normalizedMyStickers[normId] || 0) >= 1) {
           teamOwned++;
         }
-      }
+      });
       
       if (teamOwned === 0) {
         emptyTeams++;
-      } else if (teamOwned < STICKERS_PER_TEAM) {
+      } else if (teamOwned < totalInTeam) {
         incompleteTeams++;
       } else {
         fullTeams++;

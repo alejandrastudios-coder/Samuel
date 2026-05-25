@@ -128,8 +128,9 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
       if (filter === 'all') return true;
 
-      const ownedCount = Array.from({ length: group.count }).filter((_, i) => {
-        const id = `${group.id}-${i + 1}`;
+      const nums = getStickerNumbers(group.id);
+      const ownedCount = nums.filter((numVal) => {
+        const id = `${group.id}-${numVal}`;
         const normId = normalizeStickerId(id);
         return (normalizedMyStickers[normId] || 0) >= 1;
       }).length;
@@ -254,14 +255,15 @@ export default function Album({ userProfile }: { userProfile: UserProfile | null
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredGroups.map((group, idx) => {
-        const ownedInGroup = Array.from({ length: group.count }).filter((_, i) => {
-          const id = `${group.id}-${i + 1}`;
+        const nums = getStickerNumbers(group.id);
+        const ownedInGroup = nums.filter((numVal) => {
+          const id = `${group.id}-${numVal}`;
           const normId = normalizeStickerId(id);
           return (normalizedMyStickers[normId] || 0) >= 1;
         }).length;
 
-        const hasRepeated = Array.from({ length: group.count }).some((_, i) => {
-          const id = `${group.id}-${i + 1}`;
+        const hasRepeated = nums.some((numVal) => {
+          const id = `${group.id}-${numVal}`;
           const normId = normalizeStickerId(id);
           return (normalizedMyStickers[normId] || 0) > 1;
         });

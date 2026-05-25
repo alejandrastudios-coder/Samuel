@@ -31,10 +31,10 @@ export const RARITIES = [
   { id: 'negro', name: 'Negro', label: 'Uno en el mundo', color: 'bg-zinc-950', text: 'text-white', border: 'border-zinc-800' }
 ];
 
-export const normalizeStickerId = (id: string) => {
+export const normalizeStickerId = (id: string): string => {
   if (!id) return id;
   
-  let normalized = id;
+  let normalized = id.trim();
   if (normalized.startsWith('UFW')) normalized = normalized.replace('UFW', 'FWC');
   if (normalized.startsWith('COCA-COLA')) normalized = normalized.replace('COCA-COLA', 'CC');
   if (normalized.startsWith('extra-')) normalized = normalized.replace('extra-', 'CC-');
@@ -44,28 +44,85 @@ export const normalizeStickerId = (id: string) => {
     const parts = normalized.split('-');
     const index = parseInt(parts[1]);
     if (!isNaN(index) && TEAMS[index]) {
-      return `${TEAMS[index]}-${parts[2]}`;
+      normalized = `${TEAMS[index]}-${parts[2]}`;
     }
   }
 
-  // If it's already a name-num format
-  const lastDash = normalized.lastIndexOf('-');
-  if (lastDash === -1) return normalized;
-  
-  const namePart = normalized.substring(0, lastDash);
-  const numPart = normalized.substring(lastDash + 1);
+  // Find the separator (usually '-' or ' ')
+  let lastDash = normalized.lastIndexOf('-');
+  if (lastDash === -1) {
+    const lastSpace = normalized.lastIndexOf(' ');
+    if (lastSpace !== -1) {
+      const namePart = normalized.substring(0, lastSpace).trim();
+      const numPart = normalized.substring(lastSpace + 1).trim();
+      if (!isNaN(parseInt(numPart)) || numPart === '00') {
+        normalized = `${namePart}-${numPart}`;
+      }
+    }
+  }
 
-  // Try to find if this namePart corresponds to any team (ignoring accents and the 3-letter prefix)
-  const clean = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/^[a-z]{3}\s+/, "");
+  const updatedDash = normalized.lastIndexOf('-');
+  if (updatedDash === -1) return normalized;
+  
+  let namePart = normalized.substring(0, updatedDash).trim();
+  let numPart = normalized.substring(updatedDash + 1).trim();
+
+  // Strip leading zeros unless it is exactly '00'
+  if (numPart !== '00') {
+    const parsedNum = parseInt(numPart);
+    if (!isNaN(parsedNum)) {
+      numPart = parsedNum.toString();
+    }
+  }
+
+  // 1. Check if namePart matches a team's 3-letter prefix (e.g. "KOR", "MEX", "CIV")
+  const prefixKey = namePart.toUpperCase();
+  const matchedPreset = TEAMS.find(t => t.startsWith(prefixKey + " "));
+  if (matchedPreset) {
+    return `${matchedPreset}-${numPart}`;
+  }
+
+  // 2. Clean normalizer helper and compare names
+  const clean = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
   const targetClean = clean(namePart);
+  const targetCleanNoPrefix = targetClean.replace(/^[a-z]{3}\s+/, "");
 
   for (const team of TEAMS) {
-    if (clean(team) === targetClean) {
+    const teamClean = clean(team);
+    const teamCleanNoPrefix = teamClean.replace(/^[a-z]{3}\s+/, "");
+    
+    if (teamClean === targetClean || 
+        teamCleanNoPrefix === targetClean || 
+        teamCleanNoPrefix === targetCleanNoPrefix) {
       return `${team}-${numPart}`;
     }
   }
 
-  return normalized;
+  // 3. Fallbacks for specials FWC and CC (Coca-Cola)
+  if (prefixKey === 'FWC' || targetClean === 'ufw') {
+    return `FWC-${numPart}`;
+  }
+  if (prefixKey === 'CC' || targetClean === 'coca-cola' || targetClean === 'extra') {
+    return `CC-${numPart}`;
+  }
+
+  return `${namePart}-${numPart}`;
+};
+
+export const getValidStickerIds = (): string[] => {
+  const ids: string[] = [];
+  TEAMS.forEach(team => {
+    getStickerNumbers(team).forEach(num => {
+      ids.push(normalizeStickerId(`${team}-${num}`));
+    });
+  });
+  getStickerNumbers('FWC').forEach(num => {
+    ids.push(normalizeStickerId(`FWC-${num}`));
+  });
+  getStickerNumbers('CC').forEach(num => {
+    ids.push(normalizeStickerId(`CC-${num}`));
+  });
+  return ids;
 };
 
 export const ALL_COUNTRIES = [
