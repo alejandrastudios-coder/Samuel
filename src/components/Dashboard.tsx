@@ -272,20 +272,24 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       
       const updatedStickers = { ...currentStickers, ...repeatedToImport };
       
-      // Explicitly remove duplicate status/counts for the 8 requested stickers
-      const keysToClean = [
-        "RSA South Africa-4",
-        "CZE Czechia-16",
-        "SUI Switzerland-14",
-        "BRA Brazil-14",
-        "MEX México-4",
-        "KOR Korea Republic-7",
-        "IRN IR Iran-10",
-        "IRN IR Iran-20"
-      ];
-      keysToClean.forEach(key => {
-        if (typeof updatedStickers[key] === 'number' && updatedStickers[key] > 1) {
-          updatedStickers[key] = 1;
+      // Explicitly remove duplicate status/counts for the 8 requested stickers (wildcard check)
+      const matchesTarget = (id: string) => {
+        const norm = id.trim().toLowerCase();
+        if ((norm.includes("south africa") || norm.includes("rsa")) && norm.endsWith("-4")) return true;
+        if ((norm.includes("czechia") || norm.includes("cze")) && norm.endsWith("-16")) return true;
+        if ((norm.includes("switzerland") || norm.includes("sui")) && norm.endsWith("-14")) return true;
+        if ((norm.includes("brazil") || norm.includes("bra")) && norm.endsWith("-14")) return true;
+        if ((norm.includes("méxico") || norm.includes("mexico") || norm.includes("mex")) && norm.endsWith("-4")) return true;
+        if ((norm.includes("korea") || norm.includes("kor")) && norm.endsWith("-7")) return true;
+        if ((norm.includes("iran") || norm.includes("irn")) && (norm.endsWith("-10") || norm.endsWith("-20"))) return true;
+        return false;
+      };
+
+      Object.keys(updatedStickers).forEach(key => {
+        if (matchesTarget(key)) {
+          if (typeof updatedStickers[key] === 'number' && updatedStickers[key] > 1) {
+            updatedStickers[key] = 1;
+          }
         }
       });
       
@@ -413,26 +417,34 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
 
   // Automated self-healing for Samuel to ensure requested repeated stickers are normalized to count 1
   useEffect(() => {
-    if (userProfile && userProfile.username.toLowerCase().trim() === 'samuel' && progress) {
+    const isSamuel = userProfile && (
+      userProfile.username.toLowerCase().trim() === 'samuel' || 
+      userProfile.email === 'alejandrastudios@gmail.com' ||
+      userProfile.role === 'admin'
+    );
+    if (isSamuel && progress) {
       const currentStickers = progress.stickers || {};
-      const keysToClean = [
-        "RSA South Africa-4",
-        "CZE Czechia-16",
-        "SUI Switzerland-14",
-        "BRA Brazil-14",
-        "MEX México-4",
-        "KOR Korea Republic-7",
-        "IRN IR Iran-10",
-        "IRN IR Iran-20"
-      ];
+      const matchesTarget = (id: string) => {
+        const norm = id.trim().toLowerCase();
+        if ((norm.includes("south africa") || norm.includes("rsa")) && norm.endsWith("-4")) return true;
+        if ((norm.includes("czechia") || norm.includes("cze")) && norm.endsWith("-16")) return true;
+        if ((norm.includes("switzerland") || norm.includes("sui")) && norm.endsWith("-14")) return true;
+        if ((norm.includes("brazil") || norm.includes("bra")) && norm.endsWith("-14")) return true;
+        if ((norm.includes("méxico") || norm.includes("mexico") || norm.includes("mex")) && norm.endsWith("-4")) return true;
+        if ((norm.includes("korea") || norm.includes("kor")) && norm.endsWith("-7")) return true;
+        if ((norm.includes("iran") || norm.includes("irn")) && (norm.endsWith("-10") || norm.endsWith("-20"))) return true;
+        return false;
+      };
       
       let needsFix = false;
       const updatedStickers = { ...currentStickers };
       
-      keysToClean.forEach(key => {
-        if (typeof updatedStickers[key] === 'number' && updatedStickers[key] > 1) {
-          updatedStickers[key] = 1;
-          needsFix = true;
+      Object.keys(updatedStickers).forEach(key => {
+        if (matchesTarget(key)) {
+          if (typeof updatedStickers[key] === 'number' && updatedStickers[key] > 1) {
+            updatedStickers[key] = 1;
+            needsFix = true;
+          }
         }
       });
       
