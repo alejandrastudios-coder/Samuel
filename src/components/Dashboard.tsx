@@ -11,6 +11,7 @@ import { cn } from '../lib/utils';
 import { WorldCupBall } from './ui/WorldCupBall';
 import { RepeatedList } from './RepeatedList';
 import { MissingList } from './MissingList';
+import { ShareModal } from './ShareModal';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Dashboard({ userProfile }: { userProfile: UserProfile | null }) {
@@ -22,6 +23,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const [unreadCount, setUnreadCount] = useState(0);
   const [isRepeatedListOpen, setIsRepeatedListOpen] = useState(false);
   const [isMissingListOpen, setIsMissingListOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isIOSModalOpen, setIsIOSModalOpen] = useState(false);
   const [isRarityModalOpen, setIsRarityModalOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
@@ -624,6 +626,36 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         </div>
       </header>
 
+      {/* Quick Share Widget Banner */}
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden bg-zinc-900 border border-zinc-800 p-6 sm:p-8 rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/2 blur-[60px] rounded-full pointer-events-none" />
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-green-500/10 to-emerald-500/10 flex items-center justify-center border border-green-500/20 shadow-xl">
+            <ShareIcon className="w-6 h-6 text-green-500" />
+          </div>
+          <div className="text-left">
+            <h3 className="text-lg sm:text-xl font-black text-white italic uppercase tracking-tight">
+              {t('share.title')}
+            </h3>
+            <p className="text-zinc-400 text-xs mt-1 leading-relaxed max-w-md">
+              {t('share.subtitle')}
+            </p>
+          </div>
+        </div>
+        <button 
+          onClick={() => setIsShareModalOpen(true)}
+          className="relative z-10 px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-black text-[11px] uppercase tracking-widest rounded-full transition-all active:scale-95 shadow-lg shadow-green-900/30 flex items-center gap-3 border border-green-400/20 cursor-pointer"
+        >
+          <ShareIcon className="w-4 h-4" />
+          {t('share.button_action')}
+        </button>
+      </motion.div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
@@ -1065,6 +1097,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         isOpen={isRepeatedListOpen} 
         onClose={() => setIsRepeatedListOpen(false)} 
         stickers={normalizedMyStickers} 
+        onShare={() => setIsShareModalOpen(true)}
       />
 
       <MissingList 
@@ -1072,6 +1105,14 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         onClose={() => setIsMissingListOpen(false)} 
         stickers={normalizedMyStickers}
         onFindWhoHasIt={(stickerId) => navigate('/market?search=' + encodeURIComponent(stickerId))}
+        onShare={() => setIsShareModalOpen(true)}
+      />
+
+      <ShareModal 
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        stickers={normalizedMyStickers}
+        userProfile={userProfile}
       />
 
       <AnimatePresence>

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Clock, Search } from 'lucide-react';
+import { X, Clock, Search, Share2 } from 'lucide-react';
 import { TEAMS, FLAGS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, getStickerNumbers } from '../constants';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -10,9 +10,10 @@ interface MissingListProps {
   onClose: () => void;
   stickers: Record<string, number>;
   onFindWhoHasIt?: (stickerId: string) => void;
+  onShare?: () => void;
 }
 
-export function MissingList({ isOpen, onClose, stickers, onFindWhoHasIt }: MissingListProps) {
+export function MissingList({ isOpen, onClose, stickers, onFindWhoHasIt, onShare }: MissingListProps) {
   const { t } = useLanguage();
 
   const missingByTeam = useMemo(() => {
@@ -109,13 +110,25 @@ export function MissingList({ isOpen, onClose, stickers, onFindWhoHasIt }: Missi
                   {t('missing.inventory')} • <span className="text-worldcup-red">{totalMissingCount} {t('dash.figures')}</span>
                 </p>
               </div>
-              <button
-                onClick={onClose}
-                className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-                id="close-missing-list-btn"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-3">
+                {onShare && (
+                  <button
+                    onClick={onShare}
+                    className="h-12 px-5 rounded-2xl bg-zinc-900 border border-zinc-800 text-green-500 hover:text-green-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2 transition-colors active:scale-95 cursor-pointer"
+                    title={t('share.title')}
+                  >
+                    <Share2 className="w-5 h-5 text-green-500" />
+                    <span className="hidden xs:inline">Compartir</span>
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer animate-pulse"
+                  id="close-missing-list-btn"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             {/* List */}

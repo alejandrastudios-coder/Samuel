@@ -324,4 +324,13 @@ export const translations: Translations = {
   'online.status': { es: 'En línea', en: 'Online', pt: 'Online' },
   'online.offline_status': { es: 'Desconectado', en: 'Offline', pt: 'Desconectado' },
   'chat.typing_indicator': { es: 'está escribiendo...', en: 'is typing...', pt: 'está digitando...' },
+  'share.title': { es: 'Compartir Faltantes y Repetidas', en: 'Share Missing & Repeated', pt: 'Compartilhar Faltando e Repetidas' },
+  'share.subtitle': { es: 'Crea una lista formateada para tus amigos o redes sociales.', en: 'Create a formatted list for your friends or social media.', pt: 'Crie uma lista formatada para seus amigos ou redes sociais.' },
+  'share.button_action': { es: 'COMPARTIR LISTAS', en: 'SHARE LISTS', pt: 'COMPARTILHAR LISTAS' },
+  'share.modal_title': { es: 'Compartir mis Estampas', en: 'Share My Stickers', pt: 'Compartilhar Minhas Figurinhas' },
+  'share.copy_whatsapp': { es: 'Compartir en WhatsApp', en: 'Share on WhatsApp', pt: 'Compartilhar no WhatsApp' },
+  'share.copy_telegram': { es: 'Compartir en Telegram', en: 'Share on Telegram', pt: 'Compartilhar no Telegram' },
+  'share.copy_clipboard': { es: 'Copiar al Portapapeles', en: 'Copy to Clipboard', pt: 'Copiar para a Área de Transferência' },
+  'share.copied': { es: '¡Listas copiadas al portapapeles con éxito!', en: 'Lists successfully copied to clipboard!', pt: 'Listas copiadas com sucesso!' },
+  'share.share_native': { es: 'Compartir en redes', en: 'Share on socials', pt: 'Compartilhar nas redes' },
 };

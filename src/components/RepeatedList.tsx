@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Repeat, ChevronRight } from 'lucide-react';
+import { X, Repeat, ChevronRight, Share2 } from 'lucide-react';
 import { TEAMS, FLAGS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, getStickerNumbers } from '../constants';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -9,9 +9,10 @@ interface RepeatedListProps {
   isOpen: boolean;
   onClose: () => void;
   stickers: Record<string, number>;
+  onShare?: () => void;
 }
 
-export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
+export function RepeatedList({ isOpen, onClose, stickers, onShare }: RepeatedListProps) {
   const { t } = useLanguage();
   
   const counts = useMemo(() => {
@@ -103,12 +104,24 @@ export function RepeatedList({ isOpen, onClose, stickers }: RepeatedListProps) {
                 <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">{t('repeated.title')}</h3>
                 <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mt-1">{t('repeated.inventory')}</p>
               </div>
-              <button
-                onClick={onClose}
-                className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-3">
+                {onShare && (
+                  <button
+                    onClick={onShare}
+                    className="h-12 px-5 rounded-2xl bg-zinc-900 border border-zinc-800 text-green-500 hover:text-green-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2 transition-colors active:scale-95 cursor-pointer"
+                    title={t('share.title')}
+                  >
+                    <Share2 className="w-5 h-5 text-green-500" />
+                    <span className="hidden xs:inline">Compartir</span>
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             {/* List */}
