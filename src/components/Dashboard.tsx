@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, collection, updateDoc, query, where } from 'firebase/firestore';
+import { doc, onSnapshot, collection, updateDoc, query, where, getDoc, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, AlbumProgress, UserGroup } from '../types';
 import { TEAMS, STICKERS_PER_TEAM, FWC_COUNT, COCA_COLA_COUNT, normalizeStickerId, RARITIES, ALL_COUNTRIES, FLAGS, getValidStickerIds, getStickerNumbers } from '../constants';
@@ -28,6 +28,7 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
   const [isRarityModalOpen, setIsRarityModalOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
   const [groups, setGroups] = useState<UserGroup[]>([]);
+  const [isImportingSamuel, setIsImportingSamuel] = useState(false);
 
   const currentRarity = userProfile?.rarity || 'cualquier';
   const rarityData = RARITIES.find(r => r.id === currentRarity) || RARITIES[0];
@@ -49,6 +50,278 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       setIsCountryModalOpen(false);
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const importSamuelStickers = async () => {
+    if (!userProfile) return;
+    if (!confirm('¿Deseas importar tus estampas de la lista seleccionada en tu perfil?')) return;
+    
+    setIsImportingSamuel(true);
+    try {
+      const stickersToImport: Record<string, number[]> = {
+        "KOR Korea Republic": [1,2,4,5,7,9,13,14,15,16,18],
+        "CIV Côte d’Ivoire": [2,4,6,10,18,20],
+        "EGY Egypt": [1,3,4,7,9,10,11,15],
+        "IRN IR Iran": [3,6,7,9,11,13,14,18,20],
+        "NZL New Zealand": [2,3,4,5,9,11,12,14,15,18],
+        "FRA France": [3,5,6,9,11,14,17,19],
+        "SEN Senegal": [2,6,7,8,10,11,13,16,17,18,20],
+        "IRQ Iraq": [1,2,9,11,13,14,15],
+        "NOR Norway": [1,4,6,9,11,16,18],
+        "ARG Argentina": [2,3,7,8,16,17],
+        "ALG Algeria": [1,2,4,9,10,12,14,15,19],
+        "AUT Austria": [4,5,6,7,8,9,11,15,16,19,20],
+        "JOR Jordan": [2,4,5,10,11,12,17,18,19],
+        "POR Portugal": [3,4,6,11,16],
+        "COD Congo DR": [3,5,6,9,11,12,13,16,18,19],
+        "UZB Uzbekistan": [7,10,12,13,14,15,17,18],
+        "COL Colombia": [1,2,3,4,12,13,14,15,20],
+        "ENG England": [1,2,4,7,8,10,12,19],
+        "CRO Croatia": [1,2,3,4,6,8,11,14,18],
+        "GHA Ghana": [2,3,10,17],
+        "PAN Panama": [1,2,4,7,10,11,15,17],
+        "FWC": [2,7,9,13,17,19],
+        "CC": [1,4,5,7,8,10,11]
+      };
+
+      const progressRef = doc(db, 'album_progress', userProfile.userId);
+      const progressDoc = await getDoc(progressRef);
+      
+      let currentStickers: Record<string, number> = {};
+      if (progressDoc.exists()) {
+        currentStickers = progressDoc.data().stickers || {};
+      } else {
+        const progressSnap = await getDocs(query(collection(db, 'album_progress'), where('userId', '==', userProfile.userId)));
+        if (!progressSnap.empty) {
+          currentStickers = progressSnap.docs[0].data().stickers || {};
+        }
+      }
+
+      const updatedStickers = { ...currentStickers };
+      let newCount = 0;
+      
+      Object.entries(stickersToImport).forEach(([team, nums]) => {
+        nums.forEach(num => {
+          const stickerId = `${team}-${num}`;
+          if (!updatedStickers[stickerId] || updatedStickers[stickerId] === 0) {
+            updatedStickers[stickerId] = 1;
+            newCount++;
+          }
+        });
+      });
+
+      await setDoc(progressRef, {
+        userId: userProfile.userId,
+        stickers: updatedStickers,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      alert(`¡Importación completada! Se agregaron ${newCount} estampas.`);
+    } catch (error) {
+      console.error(error);
+      alert('Error durante la importación: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsImportingSamuel(false);
+    }
+  };
+
+  const importSamuelRepeated = async () => {
+    if (!userProfile) return;
+    if (!confirm('¿Deseas importar tus repetidas exactas especificadas en tu lista para tu perfil?')) return;
+    
+    setIsImportingSamuel(true);
+    try {
+      const repeatedToImport: Record<string, number> = {
+        "MEX México-6": 2,
+        "MEX México-10": 3,
+        "RSA South Africa-8": 3,
+        "RSA South Africa-10": 2,
+        "RSA South Africa-15": 2,
+        "KOR Korea Republic-1": 3,
+        "KOR Korea Republic-15": 2,
+        "CZE Czechia-12": 2,
+        "CZE Czechia-8": 3,
+        "CZE Czechia-6": 2,
+        "CAN Canada-3": 2,
+        "CAN Canada-9": 4,
+        "CAN Canada-14": 2,
+        "CAN Canada-7": 2,
+        "BIH Bosnia-Herzegovina-3": 4,
+        "BIH Bosnia-Herzegovina-1": 2,
+        "QAT Qatar-8": 4,
+        "QAT Qatar-1": 3,
+        "BRA Brazil-15": 3,
+        "BRA Brazil-2": 2,
+        "MAR Morocco-14": 2,
+        "MAR Morocco-16": 2,
+        "MAR Morocco-17": 3,
+        "MAR Morocco-13": 2,
+        "HAI Haiti-17": 2,
+        "HAI Haiti-11": 2,
+        "HAI Haiti-15": 2,
+        "SCO Scotland-19": 3,
+        "SCO Scotland-1": 2,
+        "USA USA-8": 2,
+        "USA USA-12": 2,
+        "USA USA-19": 2,
+        "PAR Paraguay-16": 3,
+        "PAR Paraguay-4": 2,
+        "AUS Australia-5": 3,
+        "AUS Australia-8": 2,
+        "AUS Australia-15": 3,
+        "AUS Australia-19": 2,
+        "AUS Australia-6": 2,
+        "AUS Australia-13": 2,
+        "TUR Türkiye-12": 3,
+        "TUR Türkiye-7": 3,
+        "GER Germany-13": 3,
+        "GER Germany-14": 2,
+        "GER Germany-18": 2,
+        "GER Germany-6": 2,
+        "GER Germany-16": 2,
+        "CUW Curaçao-10": 2,
+        "CIV Côte d’Ivoire-6": 3,
+        "CIV Côte d’Ivoire-18": 2,
+        "CIV Côte d’Ivoire-15": 2,
+        "CIV Côte d’Ivoire-10": 2,
+        "ECU Ecuador-12": 2,
+        "ECU Ecuador-14": 3,
+        "ECU Ecuador-11": 2,
+        "ECU Ecuador-2": 3,
+        "NED Netherlands-16": 3,
+        "NED Netherlands-12": 2,
+        "NED Netherlands-6": 2,
+        "JPN Japan-3": 4,
+        "JPN Japan-11": 2,
+        "JPN Japan-7": 2,
+        "JPN Japan-19": 2,
+        "JPN Japan-1": 2,
+        "SWE Sweden-6": 2,
+        "TUN Tunisia-9": 2,
+        "TUN Tunisia-5": 3,
+        "BEL Belgium-4": 2,
+        "BEL Belgium-16": 2,
+        "BEL Belgium-17": 3,
+        "BEL Belgium-14": 2,
+        "EGY Egypt-3": 2,
+        "EGY Egypt-13": 2,
+        "IRN IR Iran-9": 2,
+        "IRN IR Iran-19": 2,
+        "NZL New Zealand-11": 2,
+        "NZL New Zealand-14": 2,
+        "NZL New Zealand-5": 3,
+        "NZL New Zealand-18": 2,
+        "ESP Spain-14": 2,
+        "ESP Spain-12": 2,
+        "ESP Spain-2": 3,
+        "CPV Cabo Verde-5": 4,
+        "CPV Cabo Verde-11": 3,
+        "CPV Cabo Verde-16": 3,
+        "CPV Cabo Verde-15": 2,
+        "KSA Saudi Arabia-5": 3,
+        "KSA Saudi Arabia-15": 2,
+        "KSA Saudi Arabia-11": 2,
+        "URU Uruguay-3": 2,
+        "URU Uruguay-2": 2,
+        "URU Uruguay-14": 2,
+        "URU Uruguay-5": 2,
+        "FRA France-9": 3,
+        "SEN Senegal-17": 2,
+        "SEN Senegal-8": 2,
+        "SEN Senegal-2": 2,
+        "SEN Senegal-16": 2,
+        "IRQ Iraq-20": 2,
+        "IRQ Iraq-9": 2,
+        "IRQ Iraq-11": 2,
+        "NOR Norway-11": 2,
+        "ARG Argentina-6": 2,
+        "ALG Algeria-12": 3,
+        "ALG Algeria-15": 2,
+        "AUT Austria-16": 5,
+        "AUT Austria-2": 3,
+        "AUT Austria-11": 3,
+        "AUT Austria-7": 2,
+        "JOR Jordan-18": 3,
+        "JOR Jordan-3": 2,
+        "JOR Jordan-14": 2,
+        "COD Congo DR-16": 4,
+        "COD Congo DR-3": 2,
+        "COD Congo DR-12": 2,
+        "UZB Uzbekistan-15": 2,
+        "UZB Uzbekistan-8": 2,
+        "COL Colombia-20": 2,
+        "COL Colombia-3": 2,
+        "COL Colombia-1": 2,
+        "CRO Croatia-17": 2,
+        "GHA Ghana-2": 3,
+        "PAN Panama-2": 2,
+        "PAN Panama-10": 2,
+        "FWC-19": 2,
+        "FWC-11": 2,
+        "FWC-00": 2
+      };
+
+      const progressRef = doc(db, 'album_progress', userProfile.userId);
+      const progressDoc = await getDoc(progressRef);
+      
+      let currentStickers = {};
+      if (progressDoc.exists()) {
+        currentStickers = progressDoc.data().stickers || {};
+      }
+      
+      const updatedStickers = { ...currentStickers, ...repeatedToImport };
+      
+      await updateDoc(progressRef, {
+        stickers: updatedStickers,
+        updatedAt: serverTimestamp()
+      });
+      
+      alert("¡Importación de tus repetidas completada con éxito!");
+    } catch (error) {
+      console.error('Error importing repeated stickers:', error);
+      alert('Error: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsImportingSamuel(false);
+    }
+  };
+
+  const resetSamuelRepeatedStickers = async () => {
+    if (!userProfile) return;
+    if (!confirm('¿Deseas restablecer todas tus estampas repetidas a cantidad 1?')) return;
+    
+    setIsImportingSamuel(true);
+    try {
+      const progressRef = doc(db, 'album_progress', userProfile.userId);
+      const progressDoc = await getDoc(progressRef);
+      
+      if (!progressDoc.exists()) {
+        alert('No se encontró progreso para tu álbum.');
+        return;
+      }
+      
+      const currentStickers = progressDoc.data().stickers || {};
+      const updatedStickers = { ...currentStickers };
+      let resetCount = 0;
+      
+      Object.entries(currentStickers).forEach(([stickerId, count]) => {
+        if (typeof count === 'number' && count > 1) {
+          updatedStickers[stickerId] = 1;
+          resetCount += (count - 1);
+        }
+      });
+      
+      await updateDoc(progressRef, {
+        stickers: updatedStickers,
+        updatedAt: serverTimestamp()
+      });
+      
+      alert(`Se restablecieron ${resetCount} estampas repetidas.`);
+    } catch (error) {
+      console.error('Error resetting repeated stickers:', error);
+      alert('Error: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsImportingSamuel(false);
     }
   };
 
@@ -363,24 +636,21 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-zinc-900 border-2 border-green-500/30 p-6 rounded-[2.5rem] flex flex-col sm:flex-row items-center justify-between gap-4"
+          className="bg-zinc-900 border-2 border-emerald-500/30 p-6 rounded-[2.5rem] flex flex-col gap-6"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-500/10 rounded-2xl flex items-center justify-center">
-              <ShieldCheck className="w-6 h-6 text-green-500" />
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20">
+                <ShieldCheck className="w-6 h-6 text-emerald-500" />
+              </div>
+              <div className="text-left">
+                <h4 className="text-white font-black uppercase tracking-tight text-lg italic leading-none flex items-center gap-2">
+                  Panel Rápido de Samuel
+                  <span className="text-[9px] bg-emerald-500/10 text-emerald-500 font-bold px-2 py-0.5 rounded-full border border-emerald-500/20 uppercase tracking-widest leading-none">Live</span>
+                </h4>
+                <p className="text-zinc-500 text-xs mt-1 font-medium select-none">Accesos directos para cargar tus listas en un clic desde tu celular.</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-white font-black uppercase tracking-tight">{t('admin.title')}</h4>
-              <p className="text-zinc-500 text-xs font-medium">{t('dash.admin_status')}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => navigate('/admin')}
-              className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all active:scale-95 border border-zinc-700"
-            >
-              {t('admin.title')}
-            </button>
             {userProfile.role !== 'admin' && (
               <button 
                 onClick={async () => {
@@ -392,11 +662,41 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
                     console.error(e);
                   }
                 }}
-                className="px-6 py-3 bg-green-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95"
+                className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95 cursor-pointer"
               >
                 {t('dash.restore_role')}
               </button>
             )}
+          </div>
+
+          <div className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-3">
+            <button 
+              onClick={importSamuelStickers}
+              disabled={isImportingSamuel}
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl font-bold uppercase tracking-wider text-[10px] text-blue-500 hover:text-blue-400 hover:border-blue-500/30 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <span>{isImportingSamuel ? 'PROCESANDO...' : 'IMPORTAR ESTAMPAS'}</span>
+            </button>
+            <button 
+              onClick={importSamuelRepeated}
+              disabled={isImportingSamuel}
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl font-bold uppercase tracking-wider text-[10px] text-amber-500 hover:text-amber-400 hover:border-amber-500/30 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <span>{isImportingSamuel ? 'PROCESANDO...' : 'REPETIDAS SAMUEL'}</span>
+            </button>
+            <button 
+              onClick={resetSamuelRepeatedStickers}
+              disabled={isImportingSamuel}
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl font-bold uppercase tracking-wider text-[10px] text-zinc-400 hover:text-white border-zinc-900 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <span>RESTABLECER REPETIDAS</span>
+            </button>
+            <button 
+              onClick={() => navigate('/admin')}
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl font-bold uppercase tracking-wider text-[10px] text-white hover:bg-zinc-800 transition-all active:scale-95 cursor-pointer"
+            >
+              <span>ADMINISTRACIÓN</span>
+            </button>
           </div>
         </motion.div>
       )}
