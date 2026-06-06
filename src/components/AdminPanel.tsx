@@ -476,12 +476,29 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
       const progressRef = doc(db, 'album_progress', userProfile.userId);
       const progressDoc = await getDoc(progressRef);
       
-      let currentStickers = {};
+      let currentStickers: Record<string, number> = {};
       if (progressDoc.exists()) {
         currentStickers = progressDoc.data().stickers || {};
       }
       
       const updatedStickers = { ...currentStickers, ...repeatedToImport };
+      
+      // Explicitly remove duplicate status/counts for the 8 requested stickers
+      const keysToClean = [
+        "RSA South Africa-4",
+        "CZE Czechia-16",
+        "SUI Switzerland-14",
+        "BRA Brazil-14",
+        "MEX México-4",
+        "KOR Korea Republic-7",
+        "IRN IR Iran-10",
+        "IRN IR Iran-20"
+      ];
+      keysToClean.forEach(key => {
+        if (typeof updatedStickers[key] === 'number' && updatedStickers[key] > 1) {
+          updatedStickers[key] = 1;
+        }
+      });
       
       await updateDoc(progressRef, {
         stickers: updatedStickers,

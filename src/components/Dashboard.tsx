@@ -265,12 +265,29 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       const progressRef = doc(db, 'album_progress', userProfile.userId);
       const progressDoc = await getDoc(progressRef);
       
-      let currentStickers = {};
+      let currentStickers: Record<string, number> = {};
       if (progressDoc.exists()) {
         currentStickers = progressDoc.data().stickers || {};
       }
       
       const updatedStickers = { ...currentStickers, ...repeatedToImport };
+      
+      // Explicitly remove duplicate status/counts for the 8 requested stickers
+      const keysToClean = [
+        "RSA South Africa-4",
+        "CZE Czechia-16",
+        "SUI Switzerland-14",
+        "BRA Brazil-14",
+        "MEX México-4",
+        "KOR Korea Republic-7",
+        "IRN IR Iran-10",
+        "IRN IR Iran-20"
+      ];
+      keysToClean.forEach(key => {
+        if (typeof updatedStickers[key] === 'number' && updatedStickers[key] > 1) {
+          updatedStickers[key] = 1;
+        }
+      });
       
       await updateDoc(progressRef, {
         stickers: updatedStickers,
@@ -393,6 +410,45 @@ export default function Dashboard({ userProfile }: { userProfile: UserProfile | 
       });
     }
   }, [userProfile]);
+
+  // Automated self-healing for Samuel to ensure requested repeated stickers are normalized to count 1
+  useEffect(() => {
+    if (userProfile && userProfile.username.toLowerCase().trim() === 'samuel' && progress) {
+      const currentStickers = progress.stickers || {};
+      const keysToClean = [
+        "RSA South Africa-4",
+        "CZE Czechia-16",
+        "SUI Switzerland-14",
+        "BRA Brazil-14",
+        "MEX México-4",
+        "KOR Korea Republic-7",
+        "IRN IR Iran-10",
+        "IRN IR Iran-20"
+      ];
+      
+      let needsFix = false;
+      const updatedStickers = { ...currentStickers };
+      
+      keysToClean.forEach(key => {
+        if (typeof updatedStickers[key] === 'number' && updatedStickers[key] > 1) {
+          updatedStickers[key] = 1;
+          needsFix = true;
+        }
+      });
+      
+      if (needsFix) {
+        const progressRef = doc(db, 'album_progress', userProfile.userId);
+        updateDoc(progressRef, {
+          stickers: updatedStickers,
+          updatedAt: serverTimestamp()
+        }).then(() => {
+          console.log("Samuel's repeated stickers sanitized and lowered to 1 successfully.");
+        }).catch(err => {
+          console.error("Error sanitizing Samuel's repeated stickers:", err);
+        });
+      }
+    }
+  }, [progress, userProfile]);
 
   const validStickerIds = React.useMemo(() => getValidStickerIds(), []);
   const totalPossible = validStickerIds.length;
