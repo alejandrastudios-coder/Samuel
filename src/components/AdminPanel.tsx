@@ -6,7 +6,7 @@ import { UserProfile, UserGroup } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, CheckCircle, XCircle, Trash2, Shield, User, Search, Filter, ArrowLeft, LogOut, Plus, Edit2, X, AlertTriangle, Save, Database, LayoutGrid, MapPin, Tag, Layers, Palette, RotateCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { normalizeStickerId, ALL_COUNTRIES, FLAGS } from '../constants';
+import { normalizeStickerId, ALL_COUNTRIES, FLAGS, getValidStickerIds } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function AdminPanel({ userProfile }: { userProfile: UserProfile | null }) {
@@ -234,6 +234,205 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
   const [isCleaning, setIsCleaning] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isCreatingEmilia, setIsCreatingEmilia] = useState(false);
+
+  const createEmiliaProfile = async () => {
+    if (!userProfile) return;
+    if (!confirm("¿Deseas crear o restablecer el perfil completo de la usuaria Emilia con su colección 'Usa Mex Can 26'?")) return;
+
+    setIsCreatingEmilia(true);
+    try {
+      const { initializeApp } = await import('firebase/app');
+      const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import('firebase/auth');
+      const firebaseConfig = (await import('../../firebase-applet-config.json')).default;
+
+      const emiliaEmail = 'emilia@album2026.com';
+      const emiliaPassword = 'Emi2026!';
+
+      // Use a completely separate temporary Firebase application to not log out the currently logged in admin panel user
+      const tempApp = initializeApp(firebaseConfig, 'temp_emilia_app');
+      const tempAuth = getAuth(tempApp);
+
+      let emiliaUid = '';
+      try {
+        const cred = await createUserWithEmailAndPassword(tempAuth, emiliaEmail, emiliaPassword);
+        emiliaUid = cred.user.uid;
+      } catch (authErr: any) {
+        if (authErr.code === 'auth/email-already-in-use') {
+          const cred = await signInWithEmailAndPassword(tempAuth, emiliaEmail, emiliaPassword);
+          emiliaUid = cred.user.uid;
+        } else {
+          throw authErr;
+        }
+      }
+
+      // Exact input data parsed into Needs block
+      const needsMap: Record<string, string[]> = {
+        "FWC": ["3", "4", "5", "7", "9", "10", "13", "15", "16", "19"],
+        "MEX México": ["2", "3", "14", "17", "18", "19", "20"],
+        "RSA South Africa": ["3", "4", "6"],
+        "KOR Korea Republic": ["2", "10", "16", "18"],
+        "CZE Czechia": ["3", "5", "13"],
+        "CAN Canada": ["2", "4", "6", "9", "12", "14", "15", "19"],
+        "BIH Bosnia-Herzegovina": ["4", "6", "18", "20"],
+        "QAT Qatar": ["3", "4", "5", "8", "9", "13", "16", "17"],
+        "SUI Switzerland": ["4", "5", "6", "10", "12", "15", "19", "20"],
+        "BRA Brazil": ["1", "3", "5", "15", "20"],
+        "MAR Morocco": ["3", "15", "16", "18", "19"],
+        "HAI Haiti": ["3", "7", "9", "10", "11", "13", "16", "17", "18", "20"],
+        "SCO Scotland": ["1", "4", "9", "10", "14", "19"],
+        "USA USA": ["2", "3", "8", "9", "11", "13", "19"],
+        "PAR Paraguay": ["1", "2", "4", "5", "6", "11", "12", "16", "17", "18"],
+        "AUS Australia": ["4", "6", "9", "12", "13", "17", "18", "19"],
+        "TUR Türkiye": ["7", "8", "10"],
+        "GER Germany": ["2", "5", "6", "7", "8", "13", "17", "19", "20"],
+        "CUW Curaçao": ["2", "6", "12", "15"],
+        "CIV Côte d’Ivoire": ["1", "10", "13", "15", "16"],
+        "ECU Ecuador": ["2", "3", "4", "9", "18", "20"],
+        "NED Netherlands": ["1", "2", "3", "7", "9", "10", "12"],
+        "JPN Japan": ["18", "20"],
+        "SWE Sweden": ["3", "6", "9"],
+        "TUN Tunisia": ["2", "4", "5", "7", "9", "14", "19"],
+        "BEL Belgium": ["2", "4", "6", "7", "10", "20"],
+        "EGY Egypt": ["6", "9", "10", "15", "16", "17"],
+        "IRN IR Iran": ["2", "3", "9", "12", "14", "15", "16", "19"],
+        "NZL New Zealand": ["1", "2", "5", "7", "8", "10", "18"],
+        "ESP Spain": ["2", "5", "6", "9", "13", "14", "15", "18", "19", "20"],
+        "CPV Cabo Verde": ["1", "3", "5", "6", "10", "11", "12", "15", "16", "17", "19"],
+        "KSA Saudi Arabia": ["1", "5", "13", "17", "18", "20"],
+        "URU Uruguay": ["5", "8", "10", "14", "15", "18", "19"],
+        "FRA France": ["1", "4", "11", "16", "18"],
+        "SEN Senegal": ["1", "3", "7", "11"],
+        "IRQ Iraq": ["8", "17", "18"],
+        "NOR Norway": ["10", "14", "19"],
+        "ARG Argentina": ["6", "9", "13", "16", "17", "19"],
+        "ALG Algeria": ["2", "7", "17", "18"],
+        "AUT Austria": ["1", "8", "10", "13", "14", "19", "20"],
+        "JOR Jordan": ["1", "2", "11", "12", "15"],
+        "POR Portugal": ["5", "7", "8", "9", "10", "11", "12", "13", "14", "18"],
+        "COD Congo DR": ["5", "10", "13", "15"],
+        "UZB Uzbekistan": ["4", "5", "8", "9", "15"],
+        "COL Colombia": ["1", "2", "8", "10", "12", "15", "18", "20"],
+        "ENG England": ["3", "4", "5", "6", "7", "9", "11", "12", "20"],
+        "CRO Croatia": ["1", "3", "4", "10", "11", "13"],
+        "GHA Ghana": ["10", "19", "20"],
+        "PAN Panama": ["1", "2", "3", "4", "5", "6", "7", "8", "10", "11", "12", "14", "15", "16", "17", "19", "20"],
+        "CC": ["3", "4", "6", "9", "11", "12", "13", "14"]
+      };
+
+      // Exact input data parsed into Swaps block
+      const swapsMap: Record<string, string[]> = {
+        "FWC": ["00", "2", "14"],
+        "MEX México": ["1", "5", "6", "7", "8", "9", "10", "12", "16"],
+        "RSA South Africa": ["8", "19", "20"],
+        "KOR Korea Republic": ["1", "7", "9", "11", "12", "13"],
+        "CZE Czechia": ["4", "6", "7", "10", "11", "15", "16", "20"],
+        "CAN Canada": ["3", "5", "7"],
+        "BIH Bosnia-Herzegovina": ["1", "2", "3", "7", "10", "12", "13", "14", "15", "19"],
+        "QAT Qatar": ["1", "6", "7", "10", "11", "15", "19", "20"],
+        "SUI Switzerland": ["3", "7", "8"],
+        "BRA Brazil": ["2", "6", "7", "10", "13", "16", "17", "19"],
+        "MAR Morocco": ["1", "4", "7", "9", "10", "12", "14", "20"],
+        "HAI Haiti": ["8", "15", "19"],
+        "SCO Scotland": ["2", "3", "6", "7", "8", "11", "15"],
+        "USA USA": ["4", "6", "10", "12", "20"],
+        "PAR Paraguay": ["7", "9", "13", "14", "15", "19"],
+        "AUS Australia": ["2", "3", "5", "14", "15", "16"],
+        "TUR Türkiye": ["1", "3", "4", "6", "9", "11", "15", "18", "19", "20"],
+        "GER Germany": ["4", "9", "10", "12", "16"],
+        "CUW Curaçao": ["3", "9", "11", "14", "17", "18", "20"],
+        "CIV Côte d’Ivoire": ["3", "5", "6", "8", "9", "11", "12", "14", "17", "18", "19", "20"],
+        "ECU Ecuador": ["1", "6", "11"],
+        "NED Netherlands": ["4", "6", "13", "15", "16", "17", "18", "19", "20"],
+        "JPN Japan": ["1", "2", "5", "7", "9", "10", "11", "12", "13", "14", "15", "16"],
+        "SWE Sweden": ["1", "4", "11", "12", "14", "15", "17", "19"],
+        "TUN Tunisia": ["1", "12", "13", "15", "16", "18"],
+        "BEL Belgium": ["3", "5", "8", "12", "13", "14", "16", "19"],
+        "EGY Egypt": ["2", "5", "11", "19"],
+        "IRN IR Iran": ["1", "6", "7", "8", "10"],
+        "NZL New Zealand": ["9", "12", "13", "14", "15", "17", "19", "20"],
+        "ESP Spain": ["1", "4", "8", "10", "12", "16"],
+        "CPV Cabo Verde": ["2", "7", "9", "13", "20"],
+        "KSA Saudi Arabia": ["7", "9", "11", "12", "15", "19"],
+        "URU Uruguay": ["1", "6", "7", "11", "13", "20"],
+        "FRA France": ["2", "5", "6", "9", "10", "17"],
+        "SEN Senegal": ["2", "4", "8", "10", "12", "13", "15", "16", "18"],
+        "IRQ Iraq": ["1", "2", "3", "5", "6", "9", "10", "14", "15", "19", "20"],
+        "NOR Norway": ["2", "4", "5", "7", "8", "12", "13", "15", "18"],
+        "ARG Argentina": ["1", "2", "7", "10", "11", "12", "20"],
+        "ALG Algeria": ["1", "3", "4", "5", "8", "9", "11", "14", "16"],
+        "AUT Austria": ["4", "5", "15", "16", "18"],
+        "JOR Jordan": ["4", "5", "8", "16", "18", "19"],
+        "POR Portugal": ["1", "2", "4", "6", "15", "17"],
+        "COD Congo DR": ["1", "7", "9", "11", "14", "16", "18", "19", "20"],
+        "UZB Uzbekistan": ["1", "2", "3", "7", "11", "16", "17", "19", "20"],
+        "COL Colombia": ["4", "7", "9", "11", "17", "19"],
+        "ENG England": ["1", "14", "15", "16", "17", "18", "19"],
+        "CRO Croatia": ["6", "7", "12", "15", "16", "18", "19"],
+        "GHA Ghana": ["5", "6", "14", "15", "16"],
+        "PAN Panama": ["9"]
+      };
+
+      const needsSet = new Set<string>();
+      Object.entries(needsMap).forEach(([team, nums]) => {
+        nums.forEach(num => {
+          needsSet.add(normalizeStickerId(`${team}-${num}`));
+        });
+      });
+
+      const swapsSet = new Set<string>();
+      Object.entries(swapsMap).forEach(([team, nums]) => {
+        nums.forEach(num => {
+          swapsSet.add(normalizeStickerId(`${team}-${num}`));
+        });
+      });
+
+      const stickers: Record<string, number> = {};
+      const allStickers = getValidStickerIds();
+
+      allStickers.forEach(id => {
+        const norm = normalizeStickerId(id);
+        if (needsSet.has(norm)) {
+          stickers[norm] = 0; // Needed
+        } else if (swapsSet.has(norm)) {
+          stickers[norm] = 2; // Swap / repeated
+        } else {
+          stickers[norm] = 1; // Already owned
+        }
+      });
+
+      // Set user profile
+      const emiliaProfile = {
+        userId: emiliaUid,
+        username: 'emilia',
+        password: emiliaPassword,
+        displayName: 'Emilia',
+        email: emiliaEmail,
+        status: 'approved',
+        role: 'user',
+        residingCountry: 'México',
+        groupIds: [],
+        createdAt: serverTimestamp(),
+        rarity: 'cualquier'
+      };
+
+      await setDoc(doc(db, 'users', emiliaUid), emiliaProfile, { merge: true });
+
+      // Put album progress
+      await setDoc(doc(db, 'album_progress', emiliaUid), {
+        userId: emiliaUid,
+        stickers,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      alert(`Usuario Emilia creado con éxito!\n\nEmail: ${emiliaEmail}\nContraseña: ${emiliaPassword}\n\nDetalles del Álbum:\n- Faltantes (I need): ${needsSet.size}\n- Repetidas (Swaps): ${swapsSet.size}\n- Conseguidas (Únicas): ${allStickers.length - needsSet.size - swapsSet.size}`);
+    } catch (err: any) {
+      console.error(err);
+      alert('Error al crear a Emilia: ' + (err.message || String(err)));
+    } finally {
+      setIsCreatingEmilia(false);
+    }
+  };
 
   const importSamuelStickers = async () => {
     if (!userProfile) return;
@@ -604,6 +803,14 @@ export default function AdminPanel({ userProfile }: { userProfile: UserProfile |
             </button>
           ) : (
             <div className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2 w-full lg:w-auto">
+              <button 
+                onClick={createEmiliaProfile}
+                disabled={isCreatingEmilia}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-[9px] font-black transition-all shadow-lg active:scale-95 disabled:opacity-50 border border-zinc-700 text-emerald-400 w-full md:w-auto"
+              >
+                <User className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>{isCreatingEmilia ? "CREANDO..." : "CREAR USUARIO EMILIA"}</span>
+              </button>
               <button 
                 onClick={importSamuelStickers}
                 disabled={isImporting}
